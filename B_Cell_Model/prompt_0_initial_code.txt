@@ -1,0 +1,607 @@
+ I would like to port a model written in the coding language NetLogo to be written in C++. I understand that netlogo and C++ are very different, and a lot of functionality is implemented in Netlogo that is not in C++. I have written a base version of a C++ port of netlogo and implemented a world class, turtle class, and patch class. I will provide the full C++ code plus header files. I will then in subsequent prompts give you blocks of netlogo that I would like you to translate to C++. Be verbose in your responses and do your best to include comments.
+ 
+ Here is the first part of the C++ code. Each file will be separated by three dashes (---), and the file name will be at the top. I will tell you when I have given you all the C++ code that makes up the base model.
+ 
+ //begin C++ code
+ ---
+ // agent.h
+ #ifndef AGENT_H
+ #define AGENT_H
+
+
+ #include <iostream>
+ #include <fstream>
+ #include <vector>
+
+ class Agent {
+   protected:
+     Agent(int x, int y) : x(x), y(y) {}
+   private:
+     std::string color = "";
+     int alpha = 255;
+     int x;
+     int y;
+   public:
+
+     virtual double getX() const {return x;};
+     virtual double getY() const {return y;};
+     virtual void setX(int newX){x=newX;};
+     virtual void setY(int newY){y=newY;};
+     void setColor(std::string newColor){color = newColor;};
+     std::string getColor() const {return color;};
+     void setOpacity(int newAlpha){alpha = newAlpha;};
+     int getOpacity() const {return alpha;};
+ };
+
+
+ #endif
+ ---
+ 
+ // patch.h
+ #ifndef PATCH_H
+ #define PATCH_H
+
+ #include "parameters.h"
+ #include "agent.h"
+ #include "turtle.h"
+ #include <memory>
+
+ // class Turtle;
+
+ class Patch : public Agent{
+   private:
+     std::vector<std::shared_ptr<Turtle>> turtles_here;
+     
+     double temp_var; //placeholder for diffusion totals before updating
+
+   public:
+     Patch():Agent(0,0){setColor("red");};               // base patch color is red
+     Patch(int xCoord, int yCoord) : Agent(xCoord, yCoord) {setColor("red");};
+         
+     void add_turtle(std::shared_ptr<Turtle> turtle_to_add);
+     void remove_turtle(std::shared_ptr<Turtle> turtle_to_remove);
+     void display();
+     bool is_at_capacity();
+
+     void setTempVar(double newVal){temp_var=newVal};
+     double getTempVar() const {return temp_var};
+     
+     // patch is the same iff the x and y positions are equal
+     bool operator== (Patch& that){return (this->getX()==that.getX() && this->getY()==that.getY());};
+     
+     
+     // Add more patch specific functions below for the particular implementation of a net logo model being ported
+     
+     
+ };
+
+
+
+ #endif
+ ---
+ 
+ // patch.cpp
+ #include <iostream>
+ #include <string>
+ #include <vector>
+ #include "patch.h"
+ #include <algorithm>
+ #include <fstream>
+
+ void Patch::add_turtle(std::shared_ptr<Turtle> turtle_to_add){
+   turtles_here.emplace_back(turtle_to_add);
+ }
+
+ void Patch::remove_turtle(std::shared_ptr<Turtle> turtle_to_remove){
+   turtles_here.erase(std::remove(turtles_here.begin(), turtles_here.end(), turtle_to_remove), turtles_here.end());
+ }
+
+ void Patch::display() {
+     std::cout << "Patch position: (" << this->getX() << ", " << getY() << ")" << std::endl;
+     // std::cout << "Patch color: " << color << std::endl;
+     if (turtles_here.size() > 0){
+       for (auto &turtle: turtles_here){
+         turtle->display();
+       }
+     }
+ }
+ bool Patch::is_at_capacity(){
+   return (turtles_here.size() >= PATCH_MAX_CAPACITY);
+ }
+
+
+ // Add more patch specific functions below for the particular implementation of a net logo model being ported
+
+---
+
+// turtle.h
+#ifndef TURTLE_H
+#define TURTLE_H
+
+#include "agent.h"
+#include <random>
+
+class Turtle : public Agent{
+  public :
+    Turtle(int x, int y, int ID_num, int heading=0) : Agent(x, y), ID_num(ID_num), heading(heading) {x_dec=x; y_dec=y;};
+    virtual ~Turtle() = default;
+
+  private:
+    int ID_num;
+    int heading;
+    int age;
+    float x_dec; //x and y decimal coordinates
+    float y_dec;
+    float temp_x; // temporary coords for turtle move, before actual turtle coords are moved in case destination patch is full.
+    float temp_y; // Turtle cant know about the world cause circular dependency in #include, so world will handle turtle movement between patches
+    
+
+    // add more variables that apply to all turtles here for the specific netlogo model being ported
+
+  public:
+    std::pair<int,int> move(float distance=1);
+    std::pair<int,int> jumpRandom(std::mt19937 &RNG_Engine);
+    void execute_move(bool didMove);
+    void wiggle(std::mt19937 &RNG_Engine);
+    void display();
+
+    int getID() const {return ID_num;};
+    
+    void setHeading(int newHeading){heading = newHeading;};
+    int getHeading() const {return heading;};
+    
+    void setAge(int newAge){age=newAge;};
+    void getAge() const { return age;};
+    
+    float get_x_dec() const {return x_dec;}       // already has regular getX() and getY() from agent parent class
+    float get_y_dec() const {return y_dec;}
+
+
+    bool operator== (const Turtle& turt2){return this->ID_num==turt2.ID_num;};
+    bool operator== (const Turtle* turt2){return this->ID_num==turt2->ID_num;};
+    
+    // add more turtle specific functions below. These are functions that will apply to all turtle types, not a single breed
+
+};
+
+
+#endif
+---
+
+// turtle.cpp
+#include <iostream>
+#include <string>
+#include "agent.h"
+#include <cmath>
+#include "turtle.h"
+#include "parameters.h"
+
+std::pair<int,int> Turtle::move(float distance) {
+  // default val for distance=1
+  // calculates the movement for the turtle based on its heading and distance to move and returns the coordinates of the destination patch
+    temp_x = x_dec;   //placeholders in case we are not able to actually execute the move. In that case, these will reset x/y decimal values
+    temp_y = y_dec;
+    float d_x = cos(heading * M_PI/180) * distance;   // converting degrees to radians and getting delta x and delta y
+    float d_y = sin(heading * M_PI/180) * distance;
+    if (!TURTLE_CONTINOUS_MOVEMENT) {   //ie discrete movement, turtles always land on the middle of patches
+      d_x = round(d_x);
+      d_y = round(d_y);
+    }
+    x_dec += d_x;
+    y_dec += d_y;
+    
+    x_dec = fmod(fmod(x_dec, WORLD_WIDTH) +WORLD_WIDTH, WORLD_WIDTH);              // wrapping around world with modulo
+    y_dec = fmod(fmod(y_dec, WORLD_HEIGHT) +WORLD_HEIGHT, WORLD_HEIGHT);           // taking double mod to make sure that a positive number for grid coordinates
+    int newx, newy;
+    newx = trunc(x_dec);    // truncating decimal coords to get int coords
+    newy = trunc(y_dec);
+
+    return std::make_pair(newx, newy);
+}
+std::pair<int,int> Turtle::jumpRandom(std::mt19937 &RNG_Engine) {
+  // get a random direction, then a random distance, then return the coordinates that we jumped to
+    int random_heading = RNG_Engine()%360;
+    int random_distance = RNG_Engine()%MAX_RANDOM_DISTANCE;
+    
+    this->setHeading(random_heading);
+    return this->move(random_distance);
+}
+
+void Turtle::execute_move(bool didMove){
+  // if we execute the move, then the world has moved the turtle to a new patch, and we need to update internal variables
+  if(didMove){
+    setX(trunc(x_dec));                             // truncating decimal coords to get int coords
+    setY(trunc(y_dec));
+  } else{
+    x_dec = temp_x;
+    y_dec = temp_y;
+  }
+}
+
+void Turtle::wiggle(std::mt19937 &RNG_Engine){
+  // randomly wiggle heading up to 45 degrees left up to 45 degrees right
+  int random_left = RNG_Engine()%45;
+  int random_right = RNG_Engine()%45;
+  this->setHeading(this->getHeading() + random_left - random_right);
+}
+
+void Turtle::display() {
+  std::cout << "Turtle position: (" << this->getX() << ", " << this->getY() << ")" << std::endl;
+  std::cout << "Turtle exact position: (" << x_dec << ", " << y_dec << ")" << std::endl;
+  std::cout << "Turtle Heading: (" << heading << ")" << std::endl;
+  std::cout << "Turtle ID: (" << ID_num << ")" << std::endl;
+}
+
+// add more turtle specific functions below. These are functions that will apply to all turtle types, not a single breed
+
+---
+
+// world.h
+#ifndef WORLD_H
+#define WORLD_H
+
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <vector>
+#include <stdlib.h>
+#include <memory>
+#include <algorithm>
+
+#include "parameters.h"
+#include "agent.h"
+#include "patch.h"
+#include "turtle.h"
+
+
+class World {
+private:
+  std::mt19937 RNG_Engine;
+  int global_ID_counter;  //ID counter for creating new turtles to make sure each has a unique ID
+  int step;
+  int time;
+  int loop_run;
+  
+  Patch all_patches[WORLD_WIDTH][WORLD_HEIGHT];
+  
+  void set_rng_seed(int newSeed){RNG_Engine.seed(newSeed);}
+  void add_patch(int x, int y);
+
+public:
+  std::vector<std::weak_ptr<Turtle>> all_turtles;
+  // include vectors of shared_ptr's of other turtle sub-types here
+  // for example:   std::vector<std::shared_ptr<Pmn>> all_pmns;
+
+  
+  World(){};
+  
+  Patch& get_patch(int x, int y);
+  Patch& getPatchAhead(std::shared_ptr<Turtle> turtle, float distance=1);
+  Patch& getPatchAheadRight(std::shared_ptr<Turtle> turtle, float distance=1);
+  Patch& getPatchAheadLeft(std::shared_ptr<Turtle> turtle, float distance=1);
+
+  void setup_patches();
+  void display_patches();
+  
+  void add_turtle(int x, int y, int id, int heading=0);
+  void move_turtle(std::shared_ptr<Turtle> turtle);
+  void move_turtle_random_jump(std::shared_ptr<Turtle> turtle);
+  void turtle_wiggle(std::shared_ptr<Turtle> turtle);
+  
+  void kill_turtle(std::shared_ptr<Turtle> turtle);
+  
+  // templated function to kill any turtle or agent
+  template <typename T>
+  void kill(std::shared_ptr<T> &ptr){
+    kill_turtle(ptr);
+    ptr.reset();
+  }
+
+  void updateTurtleVectors();
+
+  void setup();
+  void go();
+    
+  void diffuse();
+  void evaporate();
+  
+};
+
+
+#endif
+---
+
+// world.cpp
+#include "world.h"
+
+
+void World::add_patch(int x, int y){
+  all_patches[x][y] = Patch(x,y);
+}
+
+Patch& World::get_patch(int x, int y){
+  x = (x+WORLD_WIDTH)%WORLD_WIDTH;
+  y = (y+WORLD_HEIGHT)%WORLD_HEIGHT;
+  return all_patches[x][y];
+}
+
+Patch& World::getPatchAhead(std::shared_ptr<Turtle> turtle, float distance){
+  // default value for distance=1
+  // get the patch in front of the turtle, based on its current heading
+  int heading = turtle->getHeading();
+  int current_x = turtle->getX();
+  int current_y = turtle->getY();
+
+  float d_x = cos(heading * M_PI/180) * distance;   // converting degrees to radians and getting delta x and delta y
+  float d_y = sin(heading * M_PI/180) * distance;
+
+  int ahead_x = round(current_x + d_x);
+  int ahead_y = round(current_y + d_y);
+
+  return get_patch(ahead_x, ahead_y);
+}
+
+Patch& World::getPatchAheadRight(std::shared_ptr<Turtle> turtle, float distance){
+  // default value for distance=1
+  // get the patch in front and to the right of the turtle, based on its current heading
+  int heading = turtle->getHeading() - 45; // to look right 45 degrees
+  int current_x = turtle->getX();
+  int current_y = turtle->getY();
+
+  float d_x = cos(heading * M_PI/180) * distance;   // converting degrees to radians and getting delta x and delta y
+  float d_y = sin(heading * M_PI/180) * distance;
+
+  int ahead_x = round(current_x + d_x);
+  int ahead_y = round(current_y + d_y);
+
+  return get_patch(ahead_x, ahead_y);
+}
+
+Patch& World::getPatchAheadLeft(std::shared_ptr<Turtle> turtle, float distance){
+  // default value for distance=1
+  // get the patch in front and to the right of the turtle, based on its current heading
+  int heading = turtle->getHeading() + 45; // to look left 45 degrees
+  int current_x = turtle->getX();
+  int current_y = turtle->getY();
+
+  float d_x = cos(heading * M_PI/180) * distance;   // converting degrees to radians and getting delta x and delta y
+  float d_y = sin(heading * M_PI/180) * distance;
+
+  int ahead_x = round(current_x + d_x);
+  int ahead_y = round(current_y + d_y);
+
+  return get_patch(ahead_x, ahead_y);
+}
+
+void World::setup_patches(){
+  for(int x=0; x<WORLD_WIDTH; x++){
+    for(int y=0; y<WORLD_HEIGHT; y++){
+      add_patch(x,y);
+      // set initial values on patches here; eg patch.setOxy(100) to set patch oxy to initial value
+    }
+  }
+}
+
+void World::display_patches(){
+  for(auto &patchArr: all_patches){
+    for(auto &patch: patchArr){
+      patch.display();
+    }
+  }
+}
+
+void World::add_turtle(int x, int y, int id, int heading){
+  std::shared_ptr<Turtle> new_turtle = std::make_shared<Turtle>(x, y, id, heading);
+  get_patch(x,y).add_turtle(new_turtle);
+  all_turtles.emplace_back(new_turtle);
+}
+
+void World::move_turtle(std::shared_ptr<Turtle> turtle){
+  // moves the turtle but asking the turtle to calculate its movement, and if there is space on the target_patch, the world executes the move
+  Patch &turtle_current_patch = get_patch(turtle->getX(), turtle->getY());
+  std::pair<int,int> new_coords = turtle->move(); //moving along turtle.heading for the default value of 1 unit
+  Patch& target_patch = get_patch(new_coords.first, new_coords.second);
+  if (turtle_current_patch == target_patch){
+    return;
+  } else if (target_patch.is_at_capacity()){
+    turtle->execute_move(false);
+  }
+  else{
+    turtle->execute_move(true);
+    turtle_current_patch.remove_turtle(turtle);
+    target_patch.add_turtle(turtle);
+  }
+}
+
+void World::move_turtle_random_jump(std::shared_ptr<Turtle> turtle){
+  // same as move turtle but instead of turtle-> move() we are using turtle->jumpRandom(RNG_Engine)
+  Patch &turtle_current_patch = get_patch(turtle->getX(), turtle->getY());
+  std::pair<int,int> new_coords = turtle->jumpRandom(RNG_Engine);
+  Patch& target_patch = get_patch(new_coords.first, new_coords.second);
+    if (turtle_current_patch == target_patch){
+    return;
+  } else if (target_patch.is_at_capacity()){
+    turtle->execute_move(false);
+  }
+  else{
+    turtle->execute_move(true);
+    turtle_current_patch.remove_turtle(turtle);
+    target_patch.add_turtle(turtle);
+  }
+}
+
+void World::turtle_wiggle(std::shared_ptr<Turtle> turtle){
+  // wiggles the turtles heading, then moves forward along the new heading for 1 unit
+  turtle->wiggle(RNG_Engine);
+  move_turtle(turtle);
+}
+
+void World::kill_turtle(std::shared_ptr<Turtle> turtle){
+  // removed turtle from its patch
+  Patch &turtle_current_patch = get_patch(turtle->getX(), turtle->getY());
+  turtle_current_patch.remove_turtle(turtle);
+}
+
+//void kill(std::shared_ptr<T> &ptr) <-- templated function that will kill any turtle or subclass of turtle. implemented in header file
+
+void World::updateTurtleVectors(){
+    // erasing the turtle weak pointers that are now a null pointer because they have been reset
+    all_turtles.erase(std::remove_if(all_turtles.begin(), all_turtles.end(),
+    [](const std::weak_ptr<Turtle>& wp) {     //lambda function to check if weak pointer is expired (aka killed and reset() has been called)
+        return wp.expired();
+      }),
+    all_turtles.end());
+
+    // now need to erase the shared pointers that were reset with kill()
+    // for example:  all_pmns.erase(std::remove(all_pmns.begin(), all_pmns.end(), nullptr), all_pmns.end());
+    // implement erasure for all turtle shared_ptr vectors here
+}
+
+void World::setup(){
+  set_rng_seed(RNG_SEED);
+  // This function initializes the global variables and setus up the world
+  step = 0;
+  time = 1;
+  
+  setup_patches(); // Initializing the patches
+  
+  global_ID_counter = 0;
+}
+
+void World::go() {
+    // NetLogo "tick" equivalent in C++ is simply incrementing the time counter
+    step++;
+
+    // implement netlogo Go function here
+
+
+    // end of go
+    updateTurtleVectors(); // need to update turtle positions/delete dead turtles
+}
+
+void World::diffuse(){
+  // need to diffuse values from patches out to neighboring patches
+  float factor_for_neighbors = 1/8; //eight neighbors in a 2D grid
+
+  // // follow this example format for each diffusing variable
+  // for (auto& patch : all_patches){patch->setTempVar(0);}  // reset temp_var
+  // // start with Endotoxin
+  // // get totals for neighbors
+  // for (auto& center_patch : all_patches){
+  //   int center_patch_x_pos = center_patch->getX();
+  //   int center_patch_y_pos = center_patch->getY();
+  //   for (int i=-1; i<2; i++){
+  //     for (int j=-1; j<2; j++){
+  //       if (i==0 && j==0) { // skipping center cell
+  //         continue;
+  //       }
+  //       int neighbor_x = fmod((center_patch_x_pos + i), WORLD_WIDTH); // getting modulo of position + x/y to wrap around toroidal world
+  //       int neighbor_y = fmod((center_patch_y_pos + j), WORLD_HEIGHT);
+  //       auto& neighbor_patch = get_patch(neighbor_x, neighbor_y);
+  //       neighbor_patch.setTempVar(neighbor_patch.getTempVar() + center_patch->getEndotoxin()*factor_for_neighbors*ENDOTOXIN_DIFFUSION_FACTOR); // evenly adding the amount diffused out from the center patch to neighbor patches
+  //     }
+  //   }
+  // }
+  // // set Endotoxin on each patch from the temp var, then reset tempvar
+  // for (auto& patch : all_patches){
+  //   patch->setEndotoxin((patch->getEndotoxin() * (1-ENDOTOXIN_DIFFUSION_FACTOR)) + patch->getTempVar());  // new total is starting amount minus the amount that diffused out, plus the amount that diffused in from neighbors
+  //   patch->setTempVar(0); // resetting
+  // }
+  
+  //implement diffusion for other variables below
+  
+  
+}
+
+void World::evaporate(){
+  // evaporate variables off of all patches
+  for (auto& patch : all_patches) {
+    // Endotoxin as an example, amount to set is current amount times the evaporation factor
+    // patch->setEndotoxin(patch->getEndotoxin() * ENDOTOXIN_EVAPORATION_FACTOR);
+
+  }
+}
+---
+
+// main.cpp
+#include "rendering.h"
+#include "world.h"
+
+#include <chrono>
+
+int main(int argc, char const *argv[]) {
+  std::cout<<"starting main"<<std::endl;
+  World world = World();
+  World* worldptr = &world; // pointer to give to rendering engine
+  
+  // setting up world
+  world.setup();
+  world.injure_sterile(INJURY_NUMBER);
+  world.updateTurtleVectors();
+
+  // setting up rendering engine
+  RenderingEngine engine = RenderingEngine(worldptr);
+  bool quit=false;
+  SDL_Event event;
+
+
+  auto startTime = std::chrono::high_resolution_clock::now();
+  // main loop
+  std::cout<<"STARTING GO"<<std::endl;
+  for (size_t i = 0; i < NUM_STEPS; i++) {
+    std::cout<<"beginning step number " <<i<<std::endl;
+    world.go();
+    
+    // rendering loop
+    if (RENDERING){
+      engine.setBackgroundColor("black");
+      engine.renderAllPatches();
+      engine.renderAllTurtles();
+      engine.render();
+      SDL_PollEvent(&event);
+      /* will pause every step until ctrl+c is pressed
+      useful for debugging, but tgere is no way to break out of it.
+      kind of annoying, only use it when NUM_STEPS is low*/
+      
+      // quit=false;
+      // while (!quit) {
+        //       while (SDL_PollEvent(&event)) {
+          //           if (event.type == SDL_QUIT) {
+            //               quit = true;
+            //           }
+            //       }
+            //   }
+      /* will loop through and display every turn until end of NUM_STEPS, can break out with ctrl+c */
+      if (event.type == SDL_QUIT) {
+        quit = true;
+      }
+      if(quit){break;}
+    }
+  }
+  auto endTime = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+  std::cout << "Program duration: " << duration.count() << " milliseconds" << std::endl;
+
+  return 0;
+};
+---
+// parameters.h
+#ifndef PARAMETERS_H
+#define PARAMETERS_H
+
+const bool RENDERING = true;
+const bool SAVING_DATA = false;
+const bool TURTLE_CONTINOUS_MOVEMENT = false;
+
+const int RNG_SEED=108;
+const int NUM_STEPS = 2000;
+
+
+const static int WORLD_WIDTH = 101;
+const static int WORLD_HEIGHT = 101;
+const int PATCH_MAX_CAPACITY = 10;
+const int MAX_RANDOM_DISTANCE = 100;
+
+#endif
+---
+// end of C++ code

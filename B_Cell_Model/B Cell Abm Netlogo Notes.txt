@@ -1,0 +1,49 @@
+## Description of the model
+
+
+- The system takes place in a two-dimensional "square" of blood. Therefore, each patch represents an xy location in the blood
+- In the blood, there are 3 types of objects: B-cells, bacteria, and antibodies
+	- B-cells are circles
+	- Bacteria are stars
+	- Antibodies are arrowheads
+- Each B-cell expresses a single BCR
+- Each bacteria is simplified to express only a single epitope
+- Each antibody can bind to a single bacterial epitope
+
+ 
+
+## How the model works
+
+- All B-cells, bacteria, and antibodies move in random directions in the system to simulate how they might "float" in the blood
+- Bacteria behavior:
+	- Each bacteria moves in a random location
+- B-cell behavior:
+	- B-cells move in random directions
+	- If it touches a bacteria, it allows its BCR to interact with the bacteria
+	- If the bacteria's epitope happens to fit into the BCR, then the bacteria is phagocytosed and killed
+	- Then, the B-cell produces antibodies with the same specificity as the bound BCR
+- Antibody behavior:
+	- Antibodies move in a random direction
+	- Similar to a B-cell, if an antibody touches a bacteria, it neutralizes and kills that bacteria
+
+
+## How to use it
+
+1. Use the starting-num-b-cells slider to set the initial number of B-cells to add to the system
+2. Click the setup button to add the B-cells
+3. Click the go button
+4. Use the bacteria-epitope-type slider to set the single epitope-type expressed by the bacteria you want to inoculate into the system
+5. Click the inoculate button to add the bacteria
+
+Notes
+- The graph labeled "Number of Live Bacteria" monitors the number of live bacteria in the system at any given point in time.
+- The output box labeled "Duration of Infection" measures how long it takes the immune system to clear all the bacteria for any given "inoculation".
+
+## Things to notice
+
+When a bacteria with a given epitope-type is first introduced to the system, it takes a long time for the immune system to clear it. However, as antibodies are synthesized, the second inoculation of that same epitope-type bacteria will result in a shorter time to clear the infection. On the same thread, introducing a different epitope-type bacteria will result in a longer clear time, as no antibodies have been synthesized yet.
+
+## Things to try
+
+- Try inoculating the system with bacteria of any epitope-type value, and then once all the bacteria die, inoculate the system again with the same epitope-type. The time it takes for the infection to clear should be shorter, as shown in the output box labeled "Duration of Infection".
+- Then, try inoculating the system with bacteria of a different epitope-type. The duration to clear the infection should be longer.
