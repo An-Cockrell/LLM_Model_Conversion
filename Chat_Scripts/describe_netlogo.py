@@ -65,19 +65,12 @@ def describe_netlogo_as_header(
     # DEFINING PARTS OF PROMPT AND RESPONSE GENERATION
 
     # Define the base system and user prompts
-    system_prompt = "You are a helpful assistant and you will get some reference examples and a user prompt. complete the prompt."
+    system_prompt = "You are a helpful assistant and you will get some reference examples and a user prompt. Complete the prompt:"
     priming_prompt = "Create a codebase for a complex biomedical model in C++"
 
     instruction_prompt = "You going to parse the code base written in C++ and compare it to other blocks of code written in Netlogo. You will be given a single block of netlogo code that is from a netlogo implementation of the same simulation. You task is to describe in specific detail how a C++ header file could be made to define the functionality of the codeblock.There will likely be C++ code in the codebase that is directly equivalent. Only include explanations in english and not in code."
 
-    # Initial conversation setup
-    chat = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": priming_prompt},
-        {"role": "assistant", "content": "\nHere is the cpp codebase.\n" + cpp_code},
-        {"role": "user", "content": instruction_prompt},
-        {"role": "assistant", "content": "I would be happy to help! Please provide the block of netlogo and I will explain its function step by step."}
-    ]
+
 
     # Generating responses for each block of NetLogo code
     LLM_OUTPUT = {}
@@ -88,10 +81,29 @@ def describe_netlogo_as_header(
         block = str(blocks_to_label[block_id])    
         block_message = {"role":"user", "content":"\nHere is the block of netlogo:\n\n#NETLOGO CODE\n" + block}
 
-        input_tokens = tokenizer.apply_chat_template(chat + [block_message], return_tensors="pt")
-        input_tokens = input_tokens.to(model.device)
-        input_text = tokenizer.decode(input_tokens[0])
-
+        try:
+            # Initial conversation setup
+            chat = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": priming_prompt},
+                {"role": "assistant", "content": "\nHere is the cpp codebase.\n" + cpp_code},
+                {"role": "user", "content": instruction_prompt},
+                {"role": "assistant", "content": "I would be happy to help! Please provide the block of netlogo and I will explain its function step by step."}
+            ]
+            input_tokens = tokenizer.apply_chat_template(chat + [block_message], return_tensors="pt")
+            input_tokens = input_tokens.to(model.device)
+            input_text = tokenizer.decode(input_tokens[0])
+        except: #If there is an error here, likely because mistral doesnt accept a system prompt, need to manually add it instead.
+            start = time.time()  # timer for tokenization  
+            chat = [
+                {"role":"user", "content":system_prompt + "\n\n\n" + priming_prompt},
+                {"role":"assistant", "content": "\nHere is the cpp codebase.\n" + cpp_code},
+                {"role": "user", "content": instruction_prompt},
+                {"role": "assistant", "content": "I would be happy to help! Please provide the block of netlogo and I will explain its function step by step."}
+            ]
+            input_tokens = tokenizer.apply_chat_template(chat + [block_message], return_tensors="pt")
+            input_tokens = input_tokens.to(model.device)
+            input_text = tokenizer.decode(input_tokens[0])
 
         # ------------------------------------------------------- #
         # GENERATING MODEL RESPONSE
