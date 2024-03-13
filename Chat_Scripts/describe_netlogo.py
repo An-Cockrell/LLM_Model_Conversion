@@ -22,10 +22,11 @@ def describe_netlogo_as_header(
     # ------------------------------------------------------- #
     # LOADING CONTEXT/INPUT TEXT
 
-    # Load the file containing blocks of NetLogo code to label
-    files_to_chunk = "Context_Data_Files/netlogo_parsed_named_clean.json"
-    with open(files_to_chunk, "r") as f:
-        blocks_to_label = json.load(f)
+    # load netlogo to translate into headers
+    netlogo_files_to_interpret = ["Context_Data_Files/netlogo_description_text.json"]
+    for file_to_chunk in netlogo_files_to_interpret:
+        with open (file_to_chunk, "r") as f:
+            blocks_to_label = json.load(f)
 
     # Load and combine CPP code blocks for context
     cpp_files = [
@@ -85,7 +86,7 @@ def describe_netlogo_as_header(
     # print("creating inputs")
     all_blocks_start_time = time.time()
     for block_id in blocks_to_label.keys():
-        block = str(blocks_to_label[block_id])    
+        block = str(blocks_to_label[block_id]["code"])
         block_message = {"role":"user", "content":"\nHere is the block of netlogo:\n\n#NETLOGO CODE\n" + block}
 
         input_tokens = tokenizer.apply_chat_template(chat + [block_message], return_tensors="pt")
