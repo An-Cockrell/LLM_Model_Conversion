@@ -23,13 +23,13 @@ def describe_netlogo_as_header(
     # LOADING CONTEXT/INPUT TEXT
 
     # load netlogo to translate into headers
-    netlogo_files_to_interpret = ["Context_Data_Files/netlogo_description_text.json"]
+    netlogo_files_to_interpret: list[str] = ["Context_Data_Files/netlogo_description_text.json"]
     for file_to_chunk in netlogo_files_to_interpret:
         with open (file_to_chunk, "r") as f:
-            blocks_to_label = json.load(f)
+            blocks_to_label: dict = json.load(f)
 
     # Load and combine CPP code blocks for context
-    cpp_files = [
+    cpp_files: list[str] = [
         "B_Cell_Model/b_cell_functions.json",
         "B_Cell_Model/header_files.json"
     ]

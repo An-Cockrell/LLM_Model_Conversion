@@ -1,5 +1,5 @@
 from Chat_Scripts.generate_headers_updating import generate_headers_updating
-from Chat_Scripts.describe_netlogo import describe_netlogo_as_header
+from Chat_Scripts.describe_netlogo_as_header import describe_netlogo_as_header
 
 if __name__=="__main__":
     # mixtral
