@@ -137,14 +137,23 @@ def generate_headers_updating(
 
             # ------------------------------------------------------- #
             # PUTTING CHAT INTO TEMPLATE AND TOKENIZING
-            start = time.time()  # timer for tokenization  
-            chat = [
-                {"role":"system", "content":system_prompt},
-                {"role":"user", "content":prompt},
-                {"role":"assistant", "content":assistant_response},
-                {"role":"user", "content":block_message_content}
-            ]
-            input_tokens = tokenizer.apply_chat_template(chat, return_tensors="pt")
+            try:
+                start = time.time()  # timer for tokenization  
+                chat = [
+                    {"role":"system", "content":system_prompt},
+                    {"role":"user", "content":prompt},
+                    {"role":"assistant", "content":assistant_response},
+                    {"role":"user", "content":block_message_content}
+                ]
+                input_tokens = tokenizer.apply_chat_template(chat, return_tensors="pt")
+            except: #If there is an error here, likely because mistral doesnt accept a system prompt, need to manually add it instead.
+                start = time.time()  # timer for tokenization  
+                chat = [
+                    {"role":"user", "content":system_prompt + "\n\n\n" + prompt},
+                    {"role":"assistant", "content":assistant_response},
+                    {"role":"user", "content":block_message_content}
+                ]
+                input_tokens = tokenizer.apply_chat_template(chat, return_tensors="pt")
             input_tokens = input_tokens.to(model.device)
             input_text = tokenizer.decode(input_tokens[0])
 
