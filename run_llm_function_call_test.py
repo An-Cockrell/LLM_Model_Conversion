@@ -14,7 +14,7 @@ import re
 import xml.etree.ElementTree as ET
 from functools import partial
 from pydantic import BaseModel, Field, validator
-from langchain.utils.function_calling import convert_pydantic_to_openai_function
+from langchain_core.utils.function_calling import convert_pydantic_to_openai_function
 
 
 class BookRecommendation(BaseModel):
