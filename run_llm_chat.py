@@ -14,7 +14,7 @@ import re
 if __name__=="__main__":
     # mixtral
     # MODELS DECLARATION
-    model_name = "LLM_Models/Mixtral/Mixtral-8x7B-Instruct-v0.1"    # Path to chat model and 
+    model_name = "LLM_Models/Mistral/Mistral-7B-Instruct-v0.2"    # Path to chat model and 
     embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
