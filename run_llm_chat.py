@@ -84,3 +84,5 @@ if __name__=="__main__":
 
             chat.append({"role":"assistant", "content": response_plain_text})
             print("Model: \n{}".format(response_plain_text))
+
+        print(chat)
