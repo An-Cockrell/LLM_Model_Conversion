@@ -14,7 +14,7 @@ import re
 import xml.etree.ElementTree as ET
 from functools import partial
 from pydantic import BaseModel, Field, validator
-from langchain_core.utils.function_calling import convert_pydantic_to_openai_function
+from langchain_core.utils.function_calling import convert_to_openai_function
 
 
 class BookRecommendation(BaseModel):
@@ -58,11 +58,11 @@ def generate_response(prompt, model, tokenizer):
 You are a helpful assistant with access to the following functions:
 
 
-{convert_pydantic_to_openai_function(Joke)}
+{convert_to_openai_function(Joke)}
 
-{convert_pydantic_to_openai_function(BookRecommendation)}
+{convert_to_openai_function(BookRecommendation)}
 
-{convert_pydantic_to_openai_function(SongRecommendation)}
+{convert_to_openai_function(SongRecommendation)}
 
 To use these functions respond with:
 <multiplefunctions>
