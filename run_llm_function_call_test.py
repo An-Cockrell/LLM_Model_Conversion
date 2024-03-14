@@ -135,10 +135,10 @@ if __name__=="__main__":
     tokenizer.pad_token = tokenizer.eos_token
     # https://github.com/chujiezheng/chat_templates
     # if using mistral, which does not accept a system prompt, use this instead?
-    print('###### Corrected Chat Template ######')
-    chat_template = open('./chat_templates/mistral-instruct.jinja').read()
-    chat_template = chat_template.replace('    ', '').replace('\n', '')
-    tokenizer.chat_template = chat_template
+    # print('###### Corrected Chat Template ######')
+    # chat_template = open('./chat_templates/mistral-instruct.jinja').read()
+    # chat_template = chat_template.replace('    ', '').replace('\n', '')
+    # tokenizer.chat_template = chat_template
 
 
     embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
