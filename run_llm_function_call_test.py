@@ -14,7 +14,7 @@ import re
 import xml.etree.ElementTree as ET
 from functools import partial
 from pydantic import BaseModel, Field, validator
-from langchain.utils.openai_functions import convert_pydantic_to_openai_function
+from langchain.utils.function_calling import convert_pydantic_to_openai_function
 
 
 class BookRecommendation(BaseModel):
@@ -28,14 +28,41 @@ class BookRecommendation(BaseModel):
             raise ValueError("Interest cannot be empty.")
         return field
 
+class Joke(BaseModel):
+    """Get a joke that includes the setup and punchline"""
+    setup: str = Field(description="question to set up a joke")
+    punchline: str = Field(description="answer to resolve the joke")
+
+    # You can add custom validation logic easily with Pydantic.
+    @validator("setup")
+    def question_ends_with_question_mark(cls, field):
+        if field[-1] != "?":
+            raise ValueError("Badly formed question!")
+        return field
+    
+class SongRecommendation(BaseModel):
+    """Provides song recommendations based on specified genre."""
+    genre: str = Field(description="question to recommend a song.")
+    song: str = Field(description="answer to recommend a song")
+
+    @validator("genre")
+    def genre_must_not_be_empty(cls, field):
+        if not field:
+            raise ValueError("genre cannot be empty.")
+        return field
+    
+    
 def generate_response(prompt, model, tokenizer):
     fn = """{"name": "function_name", "arguments": {"arg_1": "value_1", "arg_2": value_2, ...}}"""
     prompt = f"""<|im_start|>system
 You are a helpful assistant with access to the following functions:
 
 
+{convert_pydantic_to_openai_function(Joke)}
+
 {convert_pydantic_to_openai_function(BookRecommendation)}
 
+{convert_pydantic_to_openai_function(SongRecommendation)}
 
 To use these functions respond with:
 <multiplefunctions>
