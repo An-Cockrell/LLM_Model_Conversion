@@ -11,6 +11,9 @@ import os
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 import re
 
+import gc, inspect, json, re
+from typing import get_type_hints
+
 import xml.etree.ElementTree as ET
 from functools import partial
 from langchain.pydantic_v1 import BaseModel, Field, validator
@@ -50,7 +53,21 @@ class SongRecommendation(BaseModel):
         if not field:
             raise ValueError("genre cannot be empty.")
         return field
-    
+
+def extract_function_calls(completion):
+    completion = completion.strip()
+    pattern = r"((.*?))"
+    match = re.search(pattern, completion, re.DOTALL)
+    if not match:
+        return None
+
+    multiplefn = match.group(1)
+    print("Extracting multiplefn")
+    print(multiplefn)
+    root = ET.fromstring(multiplefn)
+    functions = root.findall("functioncall")
+    return [json.loads(fn.text) for fn in functions]
+   
     
 def generate_response(prompt, model, tokenizer, generation_config_overrides={}):
     fn = """{"name": "function_name", "arguments": {"arg_1": "value_1", "arg_2": value_2, ...}}"""
@@ -108,17 +125,6 @@ Edge cases you must handle:
     print("INISIDE THE FUCNCTION^^^")
     return output
 
-def extract_function_calls(completion):
-    completion = completion.strip()
-    pattern = r"((.*?))"
-    match = re.search(pattern, completion, re.DOTALL)
-    if not match:
-        return None
-
-    multiplefn = match.group(1)
-    root = ET.fromstring(multiplefn)
-    functions = root.findall("functioncall")
-    return [json.loads(fn.text) for fn in functions]
 
 if __name__=="__main__":
     # mixtral
@@ -138,7 +144,9 @@ if __name__=="__main__":
 
     embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
     print("loading model")
-    model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, device_map="auto")
+    model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16).eval()
+
+    # model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, device_map="auto")
     print("MODEL LOADED")
 
     generation_func = partial(generate_response, model=model, tokenizer=tokenizer)
