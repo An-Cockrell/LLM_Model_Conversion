@@ -51,17 +51,20 @@ if __name__=="__main__":
         """
 
     # hacky, but a quick test to make sure that the model can accept a system input. mistral cannot, so it goes into the exception block
-    try:
-        chat = [
-            {"role":"system", "content":system_prompt},
-        ]   
-        input_tokens = tokenizer.apply_chat_template(chat + {"role":"user", "content": "test"}, return_tensors="pt")
-        print("ABLE TO USE IT LIKE THIS")
-    except:
-        chat = [
-            {"role":"user", "content":system_prompt},
-            {"role":"assistant", "content":"That sounds great, lets chat!"}
-        ]
+    chat = [
+        {"role":"system", "content":system_prompt},
+    ]   
+    # try:
+    #     chat    = [
+    #             {"role":"system", "content":system_prompt},
+    #         ]   
+    #     input_tokens = tokenizer.apply_chat_template(chat + {"role":"user", "content": "test"}, return_tensors="pt")
+    #     print("ABLE TO USE IT LIKE THIS")
+    # except:
+    #     chat = [
+    #         {"role":"user", "content":system_prompt},
+    #         {"role":"assistant", "content":"That sounds great, lets chat!"}
+    #     ]
 
     user_prompt = ""
     print("interacting with LLM, type `quit` to quit")
