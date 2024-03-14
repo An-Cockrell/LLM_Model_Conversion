@@ -104,7 +104,7 @@ Edge cases you must handle:
     output = tokenizer.decode(
         generated_tokens.squeeze()[n_tokens:], skip_special_tokens=False
     )
-    print("INISIDE THE FUCNCTION OUTPUT")
+    print("INISIDE THE FUCNCTION")
     print(output)
     return output
 
@@ -160,3 +160,46 @@ if __name__=="__main__":
             print(completion.strip())
         print("="*100)
 
+
+    # system_prompt = """
+    #     You are a chat bot that works for the An-Cockrell research lab at the University of Vermont (UVM). You have the ability to have a conversation that could span a wide range of topics, from general interest questions to more technical discussions. Those technical discussion will  likely include programming concepts, and I might ask you to interpret or write snippets of code in Python or C++. The technical discussions might also include discussion of medical topics. For each type of chat, here's what I'd like you to do for me:
+
+    #     // General Chat
+    #     Feel free to engage in a broad discussion on a variety of subjects. Whether it's about books, science or just sharing fun facts, I'm here for it. Make sure responses are related to the newest user prompt and relevant previous chat history. If there are topics or questions you're not sure about, I appreciate pointers on how to find more information or suggestions for resources to explore further.
+
+    #     // Python Code:
+    #     When discussing Python, I might need help understanding specific libraries, writing functions to solve problems, or optimizing existing code. Please ensure the Python code is clear, concise, and well-commented so I can follow along easily.
+
+    #     // C++ Code:
+    #     For C++ discussions, I might ask about syntax, best practices, or how to implement certain algorithms. Like with Python, please ensure the code is understandable and includes comments where necessary to clarify complex parts.
+        
+
+    #     Remember, the goal is to maintain a friendly and informative conversation. I'm here to learn and have fun, so let's make this a great experience for both of us!
+    #     """
+
+    # # hacky, but a quick test to make sure that the model can accept a system input. mistral cannot, so it goes into the exception block
+    # chat = [
+    #     {"role":"system", "content":system_prompt},
+    # ]   
+
+
+    # user_prompt = ""
+    # print("interacting with LLM, type `quit` to quit")
+    # while user_prompt != "quit":
+        prompt = input("user: ")
+        if prompt == "quit":
+            break
+        chat.append({"role":"user", "content": prompt})
+        input_tokens = tokenizer.apply_chat_template(chat, return_tensors="pt").to(model.device)
+
+        model.eval()
+        with torch.no_grad(), torch.backends.cuda.sdp_kernel(enable_flash=False, enable_math=False, enable_mem_efficient=True):
+            # querying model
+            outputs = model.generate(input_tokens, pad_token_id=tokenizer.eos_token_id, max_new_tokens=2048, do_sample=True)
+            # getting just the response tokens, no input tokens
+            response = outputs[0][len(input_tokens[0]):]
+            # convert back to plain text
+            response_plain_text = tokenizer.decode(response, skip_special_tokens=True)
+
+            chat.append({"role":"assistant", "content": response_plain_text})
+            print("Model: \n{}".format(response_plain_text))
