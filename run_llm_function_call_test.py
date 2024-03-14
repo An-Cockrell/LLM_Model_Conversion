@@ -144,7 +144,7 @@ if __name__=="__main__":
 
     embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
     print("loading model")
-    model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16).eval()
+    model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, torch_dtype=torch.bfloat16).eval()
 
     # model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, device_map="auto")
     print("MODEL LOADED")
