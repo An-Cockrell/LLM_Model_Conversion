@@ -81,14 +81,13 @@ Edge cases you must handle:
     # input_tokens = tokenizer.apply_chat_template(chat, return_tensors="pt").to(model.device)
     input_tokens = tokenizer(prompt, return_tensors="pt").to(model.device)
 
-    model.eval()
-    with torch.no_grad(), torch.backends.cuda.sdp_kernel(enable_flash=False, enable_math=False, enable_mem_efficient=True):
-        # querying model
-        outputs = model.generate(input_tokens)
-        # getting just the response tokens, no input tokens
-        response = outputs[0][len(input_tokens[0]):]
-        # convert back to plain text
-        response_plain_text = tokenizer.decode(response, skip_special_tokens=True)
+    model = model.eval()
+    # querying model
+    outputs = model.generate(input_tokens, pad_token_id=tokenizer.eos_token_id, max_new_tokens=2048, do_sample=True)
+    # getting just the response tokens, no input tokens
+    response = outputs[0][len(input_tokens[0]):]
+    # convert back to plain text
+    response_plain_text = tokenizer.decode(response, skip_special_tokens=True)
 
     return response_plain_text
 
