@@ -51,7 +51,8 @@ Edge cases you must handle:
 {prompt}<|im_end|>
 <|im_start|>assistant"""
     
-    input_tokens = tokenizer.apply_chat_template(chat, return_tensors="pt").to(model.device)
+    # input_tokens = tokenizer.apply_chat_template(chat, return_tensors="pt").to(model.device)
+    input_tokens = tokenizer(prompt, return_tensors="pt").to(model.device)
 
     model.eval()
     with torch.no_grad(), torch.backends.cuda.sdp_kernel(enable_flash=False, enable_math=False, enable_mem_efficient=True):
