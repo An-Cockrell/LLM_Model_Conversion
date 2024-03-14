@@ -127,7 +127,7 @@ if __name__=="__main__":
     model_name = "../LLM_Models/Mistral/OpenHermes-2.5-Mistral-7B"    # Path to chat model and 
     print("loading tokenizer")
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
-    tokenizer.pad_token = tokenizer.eos_token
+    # tokenizer.pad_token = tokenizer.eos_token
     # https://github.com/chujiezheng/chat_templates
     # if using mistral, which does not accept a system prompt, use this instead?
     # print('###### Corrected Chat Template ######')
