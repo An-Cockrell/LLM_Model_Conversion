@@ -52,7 +52,7 @@ class SongRecommendation(BaseModel):
         return field
     
     
-def generate_hermes(prompt, model, tokenizer, generation_config_overrides={}):
+def generate_response(prompt, model, tokenizer, generation_config_overrides={}):
     fn = """{"name": "function_name", "arguments": {"arg_1": "value_1", "arg_2": value_2, ...}}"""
     prompt = f"""<|im_start|>system
 You are a helpful assistant with access to the following functions:
@@ -147,6 +147,8 @@ if __name__=="__main__":
 
     for prompt in prompts:
         completion = generation_func(prompt)
+        print(completion)
+        print("STARTING EXTRACTION NOW")
         functions = extract_function_calls(completion)
 
         if functions:
