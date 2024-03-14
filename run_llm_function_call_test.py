@@ -52,11 +52,10 @@ class SongRecommendation(BaseModel):
         return field
     
     
-def generate_response(prompt, model, tokenizer, generation_config_overrides={}):
+def generate_hermes(prompt, model, tokenizer, generation_config_overrides={}):
     fn = """{"name": "function_name", "arguments": {"arg_1": "value_1", "arg_2": value_2, ...}}"""
     prompt = f"""<|im_start|>system
 You are a helpful assistant with access to the following functions:
-
 
 {convert_to_openai_function(Joke)}
 
@@ -65,11 +64,10 @@ You are a helpful assistant with access to the following functions:
 {convert_to_openai_function(SongRecommendation)}
 
 To use these functions respond with:
-<multiplefunctions>
-    <functioncall> {fn} </functioncall>
-    <functioncall> {fn} </functioncall>
+
+     {fn} 
+     {fn} 
     ...
-</multiplefunctions>
 
 
 Edge cases you must handle:
@@ -77,7 +75,6 @@ Edge cases you must handle:
 <|im_start|>user
 {prompt}<|im_end|>
 <|im_start|>assistant"""
-    
 
     generation_config = model.generation_config
     generation_config.update(
