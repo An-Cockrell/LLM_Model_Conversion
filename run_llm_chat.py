@@ -15,13 +15,25 @@ if __name__=="__main__":
     # mixtral
     # MODELS DECLARATION
     model_name = "../LLM_Models/Mistral/Mistral-7B-Instruct-v0.2"    # Path to chat model and 
-    embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
     print("loading tokenizer")
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
     tokenizer.pad_token = tokenizer.eos_token
+    # https://github.com/chujiezheng/chat_templates
+    # if using mistral, which does not accept a system prompt, use this instead?
+    print('###### Corrected Chat Template ######')
+    chat_template = open('./chat_templates/mistral-instruct.jinja').read()
+    chat_template = chat_template.replace('    ', '').replace('\n', '')
+    tokenizer.chat_template = chat_template
+
+
+    embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
     print("loading model")
     model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, device_map="auto")
     print("MODEL LOADED")
+
+
+
+
     system_prompt = """
         You are a chat bot that works for the An-Cockrell research lab at the University of Vermont (UVM). You have the ability to have a conversation that could span a wide range of topics, from general interest questions to more technical discussions. Those technical discussion will  likely include programming concepts, and I might ask you to interpret or write snippets of code in Python or C++. The technical discussions might also include discussion of medical topics. For each type of chat, here's what I'd like you to do for me:
 
@@ -44,6 +56,7 @@ if __name__=="__main__":
             {"role":"system", "content":system_prompt},
         ]   
         input_tokens = tokenizer.apply_chat_template(chat + {"role":"user", "content": "test"}, return_tensors="pt")
+        print("ABLE TO USE IT LIKE THIS")
     except:
         chat = [
             {"role":"user", "content":system_prompt},
