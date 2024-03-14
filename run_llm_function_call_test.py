@@ -84,7 +84,7 @@ Edge cases you must handle:
     model.eval()
     with torch.no_grad(), torch.backends.cuda.sdp_kernel(enable_flash=False, enable_math=False, enable_mem_efficient=True):
         # querying model
-        outputs = model.generate(input_tokens, pad_token_id=tokenizer.eos_token_id, max_new_tokens=2048, do_sample=True)
+        outputs = model.generate(input_tokens)
         # getting just the response tokens, no input tokens
         response = outputs[0][len(input_tokens[0]):]
         # convert back to plain text
