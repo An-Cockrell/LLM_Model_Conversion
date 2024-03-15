@@ -60,7 +60,7 @@ def extract_function_calls(completion):
     match = re.search(pattern, completion, re.DOTALL)
     if not match:
         return None
-
+    print(match)
     multiplefn = match.group(1)
     print("Extracting multiplefn")
     print(multiplefn)
@@ -144,9 +144,8 @@ if __name__=="__main__":
 
     embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
     print("loading model")
-    model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, torch_dtype=torch.bfloat16).eval()
 
-    # model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, device_map="auto")
+    model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, device_map="auto")
     print("MODEL LOADED")
 
     generation_func = partial(generate_response, model=model, tokenizer=tokenizer)
