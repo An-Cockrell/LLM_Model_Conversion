@@ -92,7 +92,7 @@ class SongRecommendation(BaseModel):
 
 class LoadFile(BaseModel):
     """Loads a csv file into a numpy array."""
-    filename: str = Field(description="path of file to load")
+    filename: list[str] = Field(description="path of file to load")
 
     @validator("filename")
     def filename_must_not_be_empty(cls, field):
@@ -304,7 +304,7 @@ if __name__=="__main__":
     # generation_func = partial(generate_function_call, model=model, tokenizer=tokenizer)
 
     prompts = [
-        "What is a good joke and then give me a fantasy book recommendation",
+        "give me a fantasy book recommendation and then give me a good joke",
         "load these files ['test1.csv', 'test2.csv', test6.csv']"
     ]
 
