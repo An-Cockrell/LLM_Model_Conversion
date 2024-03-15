@@ -60,10 +60,8 @@ def extract_function_calls(completion):
     match = re.search(pattern, completion, re.DOTALL)
     if not match:
         return None
-    print(match)
-    print("GOT match, getting multiple fn")
+
     multiplefn = match.group(1)
-    print(multiplefn)
     root = ET.fromstring(multiplefn)
     functions = root.findall("functioncall")
     return [json.loads(fn.text) for fn in functions]
@@ -123,8 +121,6 @@ Edge cases you must handle:
     output = tokenizer.decode(
         generated_tokens.squeeze()[n_tokens:], skip_special_tokens=False
     )
-    print(output)
-    print("INISIDE THE FUCNCTION^^^")
     return output
 
 
@@ -160,8 +156,6 @@ if __name__=="__main__":
 
     for prompt in prompts:
         completion = generation_func(prompt)
-        print(completion)
-        print("STARTING EXTRACTION NOW")
         functions = extract_function_calls(completion)
 
         if functions:
