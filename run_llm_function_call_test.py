@@ -149,7 +149,7 @@ if __name__=="__main__":
     generation_func = partial(generate_response, model=model, tokenizer=tokenizer)
 
     prompts = [
-        "Tell me a joke",
+        "Tell me a joke and then give me a good rock song",
         "Song for inspiration.",
         "Recommend me a book on Crime Thriller."
     ]
