@@ -56,13 +56,13 @@ class SongRecommendation(BaseModel):
 
 def extract_function_calls(completion):
     completion = completion.strip()
-    pattern = r"((.*?))"
+    pattern = r"(<multiplefunctions>(.*?)</multiplefunctions>)"
     match = re.search(pattern, completion, re.DOTALL)
     if not match:
         return None
     print(match)
+    print("GOT match, getting multiple fn")
     multiplefn = match.group(1)
-    print("Extracting multiplefn")
     print(multiplefn)
     root = ET.fromstring(multiplefn)
     functions = root.findall("functioncall")
@@ -82,9 +82,11 @@ You are a helpful assistant with access to the following functions:
 
 To use these functions respond with:
 
-     {fn} 
-     {fn} 
+<multiplefunctions>
+    <functioncall> {fn} </functioncall>
+    <functioncall> {fn} </functioncall>
     ...
+</multiplefunctions>
 
 
 Edge cases you must handle:
