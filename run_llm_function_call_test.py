@@ -156,22 +156,6 @@ Edge cases you must handle:
 {prompt}<|im_end|>
 <|im_start|>assistant"""
 
-    generation_config = model.generation_config
-    generation_config.update(
-        **{
-            **{
-                "use_cache": True,
-                "do_sample": True,
-                "temperature": 0.2,
-                "top_p": 1.0,
-                "top_k": 0,
-                "max_new_tokens": 512,
-                "eos_token_id": tokenizer.eos_token_id,
-                "pad_token_id": tokenizer.eos_token_id,
-            },
-            **generation_config_overrides,
-        }
-    )
 
     model = model.eval()
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
@@ -189,9 +173,11 @@ Edge cases you must handle:
 
 def generate_response_with_function_calls(prompt, model, tokenizer):
     prompt=f"""<|im_start|>system
-    You are an expert at generating a natural language prompt 
+    You are an expert at generating a natural language prompts 
     for calling specified functions, and if a function is available,
-    you always prefer to generate a prompt to call it.
+    you always prefer to generate a prompt to call it. If the user
+    asks for a function that is not available, you have the ability 
+    to generate python code that achieves the desired functinality.
     You are very very CONCISE in your responses.
 
     Here are functions that can be called:
@@ -236,11 +222,16 @@ def generate_response_with_function_calls(prompt, model, tokenizer):
     <function_prompt>{{prompt for function call in JSON format}}</function_prompt>
 </multiple_prompts>
 
-    4. If you choose not to generate a prompt, explain why you chose not to.
+    4. If you choose not to generate a prompt, explain why you chose not
+        to, and generate a function that achieves the desired functionality.
             Example:
             ME(User): "I want to know the flibbity transformation of the value flangbob"
-            YOU(Assistant): "I am sorry, but I cannot generate a function calling prompt for your input, because I dont have access to a function related to calculating a 'flibbity transformation'"
-    
+            YOU(Assistant): "I am sorry, but I cannot generate a function calling prompt for your input, because I dont have access to a function related to calculating a 'flibbity transformation'. Here is my best interpretation of the function, 'flibbity_transformation
+                '''
+                def flibbity_transformation(flangbop):
+                    return ((flangbop/10) + 3) * flangbop"
+                '''
+
     Please respond to the user prompt, using function calls when apropriate. If you prompt a function call, stop and wait for the results before continuing your response.
     <|im_end|>
     <|im_start|>user
@@ -269,8 +260,9 @@ def generate_response_with_function_calls(prompt, model, tokenizer):
             functions = extract_function_calls(response)
 
             for function in functions:
+                results[function_prompt["name"]] = function
                 # print("now calling function called test_functions.{}".format(function["name"]))
-                results[function_prompt["name"]] = getattr(test_functions, function["name"])(**function["arguments"])
+                # results[function_prompt["name"]] = getattr(test_functions, function["name"])(**function["arguments"])
             # print(results)
     else:
         print("WE DID NOT MAKE A FUNCTION")
@@ -314,4 +306,5 @@ if __name__=="__main__":
 
         completion = generate_response_with_function_calls(prompt, model, tokenizer)
         print(completion)
-
+        for function in completion:
+            getattr(test_functions, function["name"])(**function["arguments"])
