@@ -79,53 +79,6 @@ class test_functions():
             res = f.read()
         return res
         
-# class BookRecommendation(BaseModel):
-#     """Provides book recommendations based on specified interest."""
-#     interest: str = Field(description="question of user interest about a book.")
-#     recommended_book: str = Field(description="answer to recommend a book")
-
-#     @validator("interest")
-#     def interests_must_not_be_empty(cls, field):
-#         if not field:
-#             raise ValueError("Interest cannot be empty.")
-#         return field
-
-# class Joke(BaseModel):
-#     """Get a joke that includes the setup and punchline"""
-#     setup: str = Field(description="question to set up a joke")
-#     punchline: str = Field(description="answer to resolve the joke")
-
-#     # You can add custom validation logic easily with Pydantic.
-#     @validator("setup")
-#     def question_ends_with_question_mark(cls, field):
-#         if field[-1] != "?":
-#             raise ValueError("Badly formed question!")
-#         return field
-    
-
-# class SongRecommendation(BaseModel):
-#     """Provides song recommendations based on specified genre."""
-#     genre: str = Field(description="question to recommend a song.")
-#     song: str = Field(description="answer to recommend a song")
-
-#     @validator("genre")
-#     def genre_must_not_be_empty(cls, field):
-#         if not field:
-#             raise ValueError("genre cannot be empty.")
-#         return field
-    
-#     return "asdf"
-        
-# class LoadFile(BaseModel):
-#     """Loads a csv file into a numpy array."""
-#     filename: list[str] = Field(description="path of file to load")
-
-#     @validator("filename")
-#     def filename_must_not_be_empty(cls, field):
-#         if not field:
-#             raise ValueError("filename cannot be empty.")
-#         return field
-    
 
 def extract_function_calls(completion):
     completion = completion.strip()
