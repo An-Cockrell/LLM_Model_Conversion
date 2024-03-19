@@ -243,8 +243,8 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer):
     output = tokenizer.decode(
         generated_tokens.squeeze()[n_tokens:], skip_special_tokens=False
     )
-    # print("\n\nPROMPTING MODEL OUTPUT\n\n{}".format(output))
-    # print("END RAW MODEL OUTPUT")
+    print("\n\nPROMPTING MODEL OUTPUT\n\n{}".format(output))
+    print("END RAW MODEL OUTPUT")
     function_prompts = extract_function_prompt(output)
     results = {}
     if function_prompts:
@@ -255,11 +255,11 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer):
 
             for function in functions:
                 try:
-                    results[function_prompt["name"]] = function
                     # print(function["name"])
                     # print(function["name"].split("."[0], 1))
                     # print("now calling function called {}.{}".format(function["name"].split(".", 1)[0], function["name"].split(".", 1)[1]))
                     print(function)
+                    results[function_prompt["name"]] = function
                     results[function_prompt["name"]]["return_value"] = getattr(
                                                     eval(function["name"].split(".", 1)[0]),
                                                     function["name"].split(".", 1)[1])(**function["arguments"])
