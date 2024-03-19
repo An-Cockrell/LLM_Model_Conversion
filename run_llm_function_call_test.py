@@ -487,7 +487,7 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer, genera
             ME(User): <prompt that requires two function calls>
 {{'prompt_for_function_call_1': {{'name': 'function_name_1', 'arguments': {{'arg_name_1': 'arg1', 'arg_name_2': 'arg_2'}}, 'return_value': 'return value 1'}}, 'prompt_for_function_call_2': {{'name': 'function_name_2', 'arguments': {{'arg_name_1': 'arg1', 'arg_name_2': 'arg_2'}}, 'return_value': 'return value 2'}}}}
             YOU(Assistant):<Response to prompt relating to function call 1>
-{{Response to prompt relating to function call 2}}
+<Response to prompt relating to function call 2>
 
     3. If there was an error in using the function/tool, the 
         user prompt will be followed by an empty set of curly braces {{}}, or the error message will be given.
@@ -501,10 +501,12 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer, genera
         return ((flangbop/10) + 3) * flangbop"
 ''' 
 
+    Using the function calls and their return values, please respond to all parts of the user prompt.
 <|im_end|>
 <|im_start|>user
 {input_prompt}
-{results}<|im_end|>
+{results}
+<|im_end|>
 <|im_start|>assistant
 """
     inputs = tokenizer(return_prompt, return_tensors="pt").to(model.device)
