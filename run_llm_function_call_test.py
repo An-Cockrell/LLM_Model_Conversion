@@ -22,8 +22,8 @@ import gc, inspect, json, re
 from typing import get_type_hints
 
 import xml.etree.ElementTree as ET
-from functools import partial
-from langchain.pydantic_v1 import BaseModel, Field, validator
+# from functools import partial
+# from langchain.pydantic_v1 import BaseModel, Field, validator
 from langchain.chains.openai_functions import convert_to_openai_function
 
 counter = 0
@@ -194,20 +194,13 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer):
     prompt=f"""<|im_start|>system
     You are an expert at generating a natural language prompts 
     for calling specified functions, and if a function is available,
-    you always prefer to generate a prompt to call it. If the user
-    asks for a function that is not available, you have the ability 
-    to generate python code that achieves the desired functinality.
-    You are very very CONCISE in your responses.
+    you always prefer to generate a prompt to call it.
 
     Here are functions that can be called from the test_functions module:
-{convert_to_openai_function(test_functions.Joke)}
-
-{convert_to_openai_function(test_functions.BookRecommendation)}
-
-{convert_to_openai_function(test_functions.SongRecommendation)}
-
-{convert_to_openai_function(test_functions.LoadFile)}
-
+        BookRecommendation
+        Joke
+        SongRecommendation
+        LoadFile
     You also have access to all functions in the numpy module. 
         
     
@@ -223,7 +216,7 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer):
     ...
 </multiple_prompts>
 
-    4. If you choose not to generate a prompt, explain why you chose not
+    2. If you choose not to generate a prompt, explain why you chose not
         to, and generate a function that achieves the desired functionality.
             Example:
             ME(User): "I want to know the flibbity transformation of the value flangbob"
@@ -233,10 +226,10 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer):
                     return ((flangbop/10) + 3) * flangbop"
                 '''
 
-    <|im_end|>
-    <|im_start|>user
-    {input_prompt}<|im_end|>
-    <|im_start|>assistant
+<|im_end|>
+<|im_start|>user
+{input_prompt}<|im_end|>
+<|im_start|>assistant
 """
 
     model = model.eval()
@@ -261,15 +254,20 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer):
             functions = extract_function_calls(response)
 
             for function in functions:
-                results[function_prompt["name"]] = function
-                # print(function["name"])
-                # print(function["name"].split("."[0], 1))
-                # print("now calling function called {}.{}".format(function["name"].split(".", 1)[0], function["name"].split(".", 1)[1]))
-                # results[function_prompt["name"]]["return_value"] = getattr(test_functions, function["name"])(**function["arguments"])
-                results[function_prompt["name"]]["return_value"] = getattr(
-                                                eval(function["name"].split(".", 1)[0]),
-                                                function["name"].split(".", 1)[1])(**function["arguments"])
-            # print(results)
+                try:
+                    results[function_prompt["name"]] = function
+                    # print(function["name"])
+                    # print(function["name"].split("."[0], 1))
+                    # print("now calling function called {}.{}".format(function["name"].split(".", 1)[0], function["name"].split(".", 1)[1]))
+                    print(function)
+                    results[function_prompt["name"]]["return_value"] = getattr(
+                                                    eval(function["name"].split(".", 1)[0]),
+                                                    function["name"].split(".", 1)[1])(**function["arguments"])
+                # print(results)
+                except NameError as e:
+                    print("WE DIDNT CALL THE FUNCTION CORRECTLY, NAME ERROR")
+                    print(e)
+                    continue
     else:
         print("WE DID NOT MAKE A FUNCTION")
 
@@ -354,7 +352,7 @@ if __name__=="__main__":
     # generation_func = partial(generate_function_call, model=model, tokenizer=tokenizer)
 
     prompts = [
-        "using test_functions, give me a fantasy book recommendation and then give me a good joke",
+        "give me a fantasy book recommendation and then give me a good joke",
         "load these files using the test_functions module ['test1.csv', 'test2.csv', test6.csv']",
         "Load this text file [./B_Cell_Model/B Cell Abm Netlogo Notes.txt] with numpy, then summarize the text"
     ]
