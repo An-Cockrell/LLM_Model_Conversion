@@ -272,11 +272,12 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer, genera
         LoadFile
 
     You also have access to all functions in the numpy module. Refer to numpy functions as 'np.function_name'
+    You also have access to all functions in the pandas module. Refer to pandas functions as 'pd.function_name'
         
     
     Here is how you must respond to my messages:
             
-    1. When you use a tool, you will generate a natural language prompt that describes what you are looking to get with the tool. You can generate multiple prompts at once if it makes sense, but you will always wrap all prompts in between this tag <multiple_prompts></multiple_prompts> even if there is only one tool use prompt. When you respond, you must respond with each tool use prompt contained in JSON format and wrapped between this tag '<function_prompt></function_prompt>'
+    1. When you use a tool, you will generate a natural language prompt that describes what you are looking to get with the tool. Only have one tool use or instruction per prompt. You can generate multiple prompts at once if it makes sense, but you will always wrap all prompts in between this tag <multiple_prompts></multiple_prompts> even if there is only one tool use prompt. When you respond, you must respond with each tool use prompt contained in JSON format and wrapped between this tag '<function_prompt></function_prompt>'
         Example:
             ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes."
             YOU(Assistant): 
@@ -286,15 +287,15 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer, genera
     ...
 </multiple_prompts>
 
-    2. If you choose not to generate a prompt, explain why you chose not
-        to, and write a function that achieves the desired functionality.
+    2. If you choose not to generate a prompt because it is not available to you, explain why you chose not
+        to generate a prompt, and write a function that achieves the desired functionality.
             Example:
             ME(User): "I want to know the flibbity transformation of the value flangbob"
-            YOU(Assistant): "I am sorry, but I cannot generate a function calling prompt for your input, because I dont have access to a function related to calculating a 'flibbity transformation'. Here is my best interpretation of the function, 'flibbity_transformation
-                '''
-                def flibbity_transformation(flangbop):
-                    return ((flangbop/10) + 3) * flangbop"
-                '''<|im_end|>
+            YOU(Assistant): "I am sorry, but I cannot generate a function calling prompt for your input, because I dont have access to a function related to calculating a 'flibbity transformation'. Here is my best interpretation of the function, 'flibbity_transformation'
+'''
+def flibbity_transformation(flangbop):
+    return ((flangbop/10) + 3) * flangbop"
+'''<|im_end|>
 <|im_start|>user
 {input_prompt}<|im_end|>
 <|im_start|>assistant
@@ -372,41 +373,44 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer, genera
                             # print("WE DIDNT CALL THE FUNCTION CORRECTLY, NAME ERROR")
                             # print(e)
                             prompt_f += f"""
-    {response}<|im_end|>
-    <|im_start|>user
-    FAILURE!! Name Error
-    {e}
-    Please try again to generate a valid function call.<|im_end|>
-    <|im_end|>assistant
-    """
+{response}<|im_end|>
+<|im_start|>user
+FAILURE!! Name Error
+{e}
+Please try again to generate a valid function call.<|im_end|>
+<|im_end|>assistant
+"""
                             attempts += 1
                             continue
+
                         except ValueError as e:
                             # print("Something is wrong with the file, or we chose the wrong function")
                             # print(e)
                             prompt_f += f"""
-    {response}<|im_end|>
-    <|im_start|>user
-    FAILURE!! ValueError
-    {e}
-    Please try again to generate a valid function call.<|im_end|>
-    <|im_end|>assistant
-    """
+{response}<|im_end|>
+<|im_start|>user
+FAILURE!! ValueError
+{e}
+Please try again to generate a valid function call.<|im_end|>
+<|im_end|>assistant
+"""
                             attempts += 1
                             continue
+
                         except Exception as e:
                             # print("Something is wrong with the file, or we chose the wrong function")
                             # print(e)
                             prompt_f += f"""
-    {response}<|im_end|>
-    <|im_start|>user
-    FAILURE!!
-    {e}
-    Please try again to generate a valid function call.<|im_end|>
-    <|im_end|>assistant
-    """
+{response}<|im_end|>
+<|im_start|>user
+FAILURE!!
+{e}
+Please try again to generate a valid function call.<|im_end|>
+<|im_end|>assistant
+"""
                             attempts += 1
                             continue
+
             except Exception as e:
                 # print("SOMETHING WENT VERY WRONG OUTSIDE THE NORMAL ERROR HANDLING BLOCKS")
                 # print(e)
@@ -475,6 +479,54 @@ def generate_response_with_function_calls(input_prompt, model, tokenizer, genera
 
 
     return output, results
+
+def chat_with_function_calling(input_prompt, model, tokenizer, generation_config_overrides={}):
+    prompt=f"""<|im_start|>system
+    You are a programming and simulation building expert. You also
+    know when it is apropriate to try to use a tool, like a calling
+    a function, to best respond to a user prompt. You are very 
+    concise in your answers, and generally answer the user's question,
+    or write a minimal list of instructions, and that is it.
+
+    Here is how you must respond to my messages:
+            
+    1. When you deem it apropriate to use a tool, you will create
+        a single natural language statment that is an instruction for
+        what you expect to recieve from the tool. Only have one tool
+        use or instruction per statemet. When you respond, you must
+        respond with the instruction or tool use prompt contained in
+        JSON format and wrapped between this tag '<function_prompt></function_prompt>'.
+        Example:
+            ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes."
+            YOU(Assistant):<function_prompt>{{"name":"prompt_for_function_call_0", "prompt": "I am looking for song recommendations for country music"}}</function_prompt>
+
+
+    2. A user prompt might have a tool use in it for your information.
+        It will come as a JSON formatted object after the user prompt.
+        It is up to you whether another tool use or function call is 
+        apropriate, or whether all the information is available to make
+        the best response to the user possible. If another tool
+        use is apropriate, respond like this, and number the prompt_for_function_call_#
+        to be one more than the number of function call JSONs.
+        Example:
+            ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes.{{function call json with arguments and return value}}"
+            YOU(Assistant):<function_prompt>{{"name":"prompt_for_function_call_1", "prompt": "I am looking for a good joke"}}</function_prompt>
+
+    3. If you do not need to use a tool to get the best answer possible
+        to the user prompt, then respond to the user as you normally would.
+        Be helpful with your response, and and it with 'Is there anything
+        else I can help with?' like this example.
+        Example:
+            ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes.{{function call json about country music songs, with arguments and return value}}{{function call json about good jokes, with arguments and return value}}"
+            YOU(Assistant): "Based on your interest in country music, I would recommend these titles [response based on return values from function call json 0].
+            I heard you like jokes too, well have you heard this one? [response based on return values from function call json 1]
+
+            
+            Is there anything else I can help you with?<|im_end|>
+<|im_start|>user
+{input_prompt}<|im_end|>
+<|im_start|>assistant
+"""
 
 if __name__=="__main__":
     # mixtral
