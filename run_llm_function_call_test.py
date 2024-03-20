@@ -10,6 +10,7 @@ import time
 import json
 
 import inspect
+import traceback
 
 import random
 
@@ -107,6 +108,17 @@ def extract_function_name(completion):
     res = json.loads(multiplefn)
     return res
 
+def extract_single_function_prompt(completion):
+    completion = completion.strip()
+    pattern = r"<function_prompt>(.*?)</function_prompt>"
+    match = re.search(pattern, completion, re.DOTALL)
+    if not match:
+        return None
+
+    multiplefn = match.group(1)
+    res = json.loads(multiplefn)
+    return res
+
 
 def extract_function_prompt(completion):
     completion = completion.strip()
@@ -114,8 +126,9 @@ def extract_function_prompt(completion):
     match = re.search(pattern, completion, re.DOTALL)
     if not match:
         return None
-
+    # print(match)
     multiplefn = match.group(1)
+    # print(multiplefn)
     root = ET.fromstring(multiplefn)
     functions = root.findall("function_prompt")
     return [json.loads(fn.text) for fn in functions]
@@ -187,11 +200,15 @@ def generate_function_call(input_prompt, model, tokenizer, generation_config_ove
     func_ref = eval(func_name["name"])
     if func_ref:
         func_context_text = "This function might be useful.\n"
+        # print(func_name["name"])
         openai_func_ref = convert_to_openai_function(func_ref)
+        openai_func_ref["name"] = func_name["name"]
     else:
         func_context_text = ""
         openai_func_ref = ""
     # print("Func ref {}".format(func_ref))
+    # print(func_context_text)
+    # print(openai_func_ref)
 
     prompt = f"""<|im_start|>system
 You are a helpful assistant with access to the all of the standard built in python functions.
@@ -332,6 +349,7 @@ def flibbity_transformation(flangbop):
     # print("\n\nPROMPTING MODEL OUTPUT\n\n{}".format(output))
     # print("END RAW MODEL OUTPUT")
     function_prompts = extract_function_prompt(output)
+    single_f_prompt_output = extract_single_function_prompt(output)
     results = {}
 
     if function_prompts:
@@ -376,7 +394,7 @@ def flibbity_transformation(flangbop):
 {response}<|im_end|>
 <|im_start|>user
 FAILURE!! Name Error
-{e}
+{traceback.format_exc()}
 Please try again to generate a valid function call.<|im_end|>
 <|im_end|>assistant
 """
@@ -390,7 +408,7 @@ Please try again to generate a valid function call.<|im_end|>
 {response}<|im_end|>
 <|im_start|>user
 FAILURE!! ValueError
-{e}
+{traceback.format_exc()}
 Please try again to generate a valid function call.<|im_end|>
 <|im_end|>assistant
 """
@@ -404,7 +422,7 @@ Please try again to generate a valid function call.<|im_end|>
 {response}<|im_end|>
 <|im_start|>user
 FAILURE!!
-{e}
+{traceback.format_exc()}
 Please try again to generate a valid function call.<|im_end|>
 <|im_end|>assistant
 """
@@ -414,12 +432,13 @@ Please try again to generate a valid function call.<|im_end|>
             except Exception as e:
                 # print("SOMETHING WENT VERY WRONG OUTSIDE THE NORMAL ERROR HANDLING BLOCKS")
                 # print(e)
-                results[function_prompt["name"]]["error"] = e
+                results[function_prompt["name"]]["error"] = traceback.format_exc()
 
 
     else:
-        print("WE DID NOT MAKE A FUNCTION")
+        # print("WE DID NOT MAKE A FUNCTION")
         # print(function_prompts)
+        pass
 
     # print("THESE ARE THE RESUKLTS{}".format(results))
     # TODO link this to real functions and have the model produce a polished final output
@@ -480,28 +499,41 @@ Please try again to generate a valid function call.<|im_end|>
 
     return output, results
 
-def chat_with_function_calling(input_prompt, model, tokenizer, generation_config_overrides={}):
-    prompt=f"""<|im_start|>system
+def chat_with_function_calling(input_prompt, model, tokenizer, generation_config_overrides={}, MAX_FUNCTION_CALLS=3):
+    def get_prompt(input_prompt):
+        prompt=f"""<|im_start|>system
     You are a programming and simulation building expert. You also
-    know when it is apropriate to try to use a tool, like a calling
-    a function, to best respond to a user prompt. You are very 
-    concise in your answers, and generally answer the user's question,
-    or write a minimal list of instructions, and that is it.
+    know when it is better for you to answer on your own or when it
+    is apropriate to try to use a tool, like a calling a function to
+    load a file or query an API, to best respond to a user prompt.
+    You are very concise in your answers, and generally answer the 
+    user's question, or write a minimal list of instructions, and that is it.
 
     Here is how you must respond to my messages:
+
+    1. If you need to give a subjective response or a response where
+        tool use does not make sense, respond as your normally would.
+        This is generally what you would do. Tool use is only necessary
+        if you need a specific answer, like solving a math problem, or 
+        getting the contents of a file.
             
-    1. When you deem it apropriate to use a tool, you will create
+        
+    2. When you deem it apropriate to use a tool, you will create
         a single natural language statment that is an instruction for
-        what you expect to recieve from the tool. Only have one tool
+        what you expect to recieve from the tool. You will be very 
+        specific about giving full inputs arguments. Only have one tool
         use or instruction per statemet. When you respond, you must
         respond with the instruction or tool use prompt contained in
-        JSON format and wrapped between this tag '<function_prompt></function_prompt>'.
+        JSON format and wrapped between this tag '<function_prompt>{{function prompt goes here}}</function_prompt>'.
         Example:
             ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes."
             YOU(Assistant):<function_prompt>{{"name":"prompt_for_function_call_0", "prompt": "I am looking for song recommendations for country music"}}</function_prompt>
+        Example:
+            ME(User): "I want to load this file path/to/file/wanted/to/load.txt"
+            YOU(Assistant):<function_prompt>{{"name":"prompt_for_function_call_0", "prompt": "load this file 'path/to/file/wanted/to/load.txt'"}}</function_prompt>
 
 
-    2. A user prompt might have a tool use in it for your information.
+    3. A user prompt might have a tool use in it for your information.
         It will come as a JSON formatted object after the user prompt.
         It is up to you whether another tool use or function call is 
         apropriate, or whether all the information is available to make
@@ -509,17 +541,22 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
         use is apropriate, respond like this, and number the prompt_for_function_call_#
         to be one more than the number of function call JSONs.
         Example:
-            ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes.{{function call json with arguments and return value}}"
+            ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes."{{'I am looking for song recommendations for country music': {{'name': 'test_functions.SongRecommendation', 'arguments': {{'genre': 'country'}}, 'return_value': 'Based on your interest in: country\nI think you would like the song my horse is getting old\ncounter 1'}}}}"
             YOU(Assistant):<function_prompt>{{"name":"prompt_for_function_call_1", "prompt": "I am looking for a good joke"}}</function_prompt>
 
-    3. If you do not need to use a tool to get the best answer possible
+            
+    4. Only include a response wrapped in <function_prompt></function_prompt> if you intend to get a new tool call
+
+
+    5. If you do not need further tool use to get the best answer possible
         to the user prompt, then respond to the user as you normally would.
+        Using the function returns, generate a nicely formatted response.
         Be helpful with your response, and and it with 'Is there anything
         else I can help with?' like this example.
         Example:
             ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes.{{function call json about country music songs, with arguments and return value}}{{function call json about good jokes, with arguments and return value}}"
-            YOU(Assistant): "Based on your interest in country music, I would recommend these titles [response based on return values from function call json 0].
-            I heard you like jokes too, well have you heard this one? [response based on return values from function call json 1]
+            YOU(Assistant): "Based on your interest in country music, I would recommend these titles <response based on return values from function call json 0>.
+            I heard you like jokes too, well have you heard this one? <response based on return values from function call json 1>
 
             
             Is there anything else I can help you with?<|im_end|>
@@ -527,6 +564,111 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
 {input_prompt}<|im_end|>
 <|im_start|>assistant
 """
+        return prompt
+
+    extracted_function = None
+    chat_function_return = {}
+    exception_message = ""
+
+    for attempt in range (5):
+        try:
+            model_input = input_prompt + str(exception_message)
+
+            prompt = get_prompt(model_input)
+            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+
+            n_tokens = inputs.input_ids.numel()
+
+            with torch.inference_mode():
+                generated_tokens = model.generate(**inputs, pad_token_id=tokenizer.eos_token_id, max_new_tokens=2048, do_sample=True)
+
+            output = tokenizer.decode(
+                generated_tokens.squeeze()[n_tokens:], skip_special_tokens=False
+            )
+            # print("MODEL INPUT IS: \n{}".format(model_input))
+            # print("MODEL OUTPUT IS: \n{}".format(output))
+            extracted_function = extract_single_function_prompt(output)
+            # print("EXTRACTED FUNCTION IS {}".format(extracted_function))
+            if extracted_function is None:
+                # print("EXTRACTED FUNCTION IS NONE, so no function called")
+                # print("OUTPUT IS {}".format(output))
+                break
+            if not "prompt" in extracted_function:
+                raise KeyError("Prompt")
+            break # if we made it here then we extracted a function without error. break for loop and move on
+        except Exception as E:
+            # print("Exception in top part generation {}".format(E))
+            exception_message = f"""\nAttempted to generate instruction for function call, did not receive a valid response. {traceback.format_exc()}. \n Please try again\n"""
+
+    # print(extracted_function)
+    total_function_calls = 0
+    while extracted_function and total_function_calls < MAX_FUNCTION_CALLS:
+        total_function_calls += 1   # only allow up to MAX_FUNCTION_CALLS for valid LLM function calls
+        chat_function_return = {}
+        initial_prompt = extracted_function["prompt"]
+        num_func_calls = 0
+        while num_func_calls < MAX_FUNCTION_CALLS: # retry up to MAX_FUNCTION_CALLS times to get a valid response
+            num_func_calls += 1
+            try:
+                # print("Input to generate function call is {}".format(extracted_function["prompt"]))
+                function_response = generate_function_call(extracted_function["prompt"], model, tokenizer)
+                # print("RESPONSE WHEN ASKING FOR FUNCTION CALL IS:\n{}".format(function_response))
+                try:
+                    function = extract_function_calls(function_response)[0]
+                    # print(function)
+                    # execute extracted function
+                    function["return_value"] = getattr(eval(function["name"].split(".", 1)[0]), function["name"].split(".", 1)[1])(**function["arguments"])
+                    chat_function_return[initial_prompt] = function
+                    break   #if we call a function and get a return, then we did it and we can stop trying
+                except Exception as E:
+                    # adding error to function prompt to function generator does a better job
+                    extracted_function["prompt"] += f"""\nAttempted function call with function {function["name"]}\n and with arguments {function["arguments"]} \nERROR, exception thrown. Exception is: {traceback.format_exc()}"""
+            except Exception as E:
+                extracted_function["prompt"] += f"""\nAttempted to generate function call, did not receive a valid response. Exception is {traceback.format_exc()}. \n Please try again"""
+                # print(E)
+                pass
+                
+            
+        # now that we have either a return value, or a blank from not getting a valid response enough times, 
+        # query the original model and continue initial response generation
+        exception_message = ""
+        for attempt in range (5):
+            # print("WE ARE IN THE BOTTOM GENERATION PART")
+            try:
+                model_input = input_prompt + str(chat_function_return) + exception_message
+
+                prompt = get_prompt(model_input)
+
+                inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+                n_tokens = inputs.input_ids.numel()
+
+                with torch.inference_mode():
+                    generated_tokens = model.generate(**inputs, pad_token_id=tokenizer.eos_token_id, max_new_tokens=2048, do_sample=True)
+
+
+                output = tokenizer.decode(
+                    generated_tokens.squeeze()[n_tokens:], skip_special_tokens=False
+                )
+                # print("MODEL INPUT IS: \n{}".format(model_input))
+                # print("MODEL OUTPUT IS: \n{}".format(output))
+                extracted_function = extract_single_function_prompt(output)
+                # print("EXTRACTED FUNCTION IS {}".format(extracted_function))
+                if extracted_function is None:
+                    # print("EXTRACTED FUNCTION IS NONE")
+                    # print("OUTPUT IS {}".format(output))
+                    break
+                if not "prompt" in extracted_function:
+                    raise KeyError("Prompt")
+                break # if we made it here then we extracted a function without error. break for loop and move on
+            except Exception as E:
+                exception_message = f"""\nAttempted to generate instruction for function call, did not receive a valid response. {traceback.format_exc()}. \n Please try again\n"""
+
+
+    return output, str(chat_function_return), input_prompt
+        
+    
+
+        
 
 if __name__=="__main__":
     # mixtral
@@ -552,23 +694,40 @@ if __name__=="__main__":
 
     # generation_func = partial(generate_function_call, model=model, tokenizer=tokenizer)
 
-    prompts = [
-        "give me a fantasy book recommendation and then give me a good joke",
-        "load these files using the test_functions module ['test1.csv', 'test2.csv', test6.csv']",
-        "Load this text file [./B_Cell_Model/B Cell Abm Netlogo Notes.txt]. It is a description of an implementation of a simlation. Then print the text, and summarize the meaning of the text"
-    ]
+    # prompts = [
+    #     "give me a fantasy book recommendation and then give me a good joke",
+    #     "load these files using the test_functions module ['test1.csv', 'test2.csv', test6.csv']",
+    #     "Load this text file [./B_Cell_Model/B Cell Abm Netlogo Notes.txt]. It is a description of an implementation of a simlation. Then print the text, and summarize the meaning of the text"
+    # ]
 
 
-    import time
-    for prompt in prompts:
-        start = time.time()
-        # completion = generate_function_call(prompt, model, tokenizer)
-        # functions = extract_function_calls(completion)
+    # import time
+    # for prompt in prompts:
+    #     start = time.time()
+    #     # completion = generate_function_call(prompt, model, tokenizer)
+    #     # functions = extract_function_calls(completion)
 
-        completion, function_calls = generate_response_with_function_calls(prompt, model, tokenizer)
-        print("TOTAL GENERATION TIME IS {:.2f}".format(time.time() - start))
-        print("THIS IS THE COMPLETED RESPONSE FROM THE MODEL\n\n{}".format(completion))
-        print("\n\n\n")
-        print("THESE ARE THE FUNCTION CALLS")
+    #     completion, function_calls = generate_response_with_function_calls(prompt, model, tokenizer)
+    #     print("TOTAL GENERATION TIME IS {:.2f}".format(time.time() - start))
+    #     print("THIS IS THE COMPLETED RESPONSE FROM THE MODEL\n\n{}".format(completion))
+    #     print("\n\n\n")
+    #     print("THESE ARE THE FUNCTION CALLS")
+    #     print(function_calls)
+
+    chat_max_length = 10
+    for chat_num in range(chat_max_length):
+        # prompt = input("user: ")
+        # prompt = "I really like rap music and I want to learn new songs. I wanna hear a new joke too."
+        prompt = "Load this file and then tell me the most frequently appearing word and character, then tell me the length of the file as a string. ./B_Cell_Model/B Cell Abm Netlogo Notes.txt"
+        if prompt == "quit":
+            break
+        output, function_calls, model_input = chat_with_function_calling(prompt, model, tokenizer)
+        print("With input to model as: ")
+        print(model_input)
+        print("-"*100)
+        print("THE FINAL OUTPUT OF THE MODEL IS: ")
+        print(output)
+        print("-"*100)
+        print("WE CALLED THESE FUNCTIONS")
         print(function_calls)
-
+        print("%"*100)
