@@ -515,8 +515,10 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
 
     0. Before you respond, you will make a plan for how to answer the 
         user prompt, and display your explain your plan as you 'thinking' 
-        by wrapping your plan in this tag <THINKING></THINKING>. After 
-        thinking, execute the next step of the plan.
+        by wrapping your plan in this tag <THINKING></THINKING>. Consider
+        the user prompt and the functions that have been called and their
+        return values as you are planning. After thinking, execute the 
+        next step of the plan.
 
     1. If you need to give a subjective response or a response where
         tool use does not make sense, respond as your normally would.
