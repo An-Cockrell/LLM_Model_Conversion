@@ -322,7 +322,7 @@ def flibbity_transformation(flangbop):
     generation_config.update(
         **{
             **{
-                "use_cache": False,
+                "use_cache": True,
                 "do_sample": True,
                 "temperature": 0.2,
                 "top_p": 1.0,
@@ -485,6 +485,7 @@ Please try again to generate a valid function call.<|im_end|>
 <|im_end|>
 <|im_start|>assistant
 """
+    model = model.eval()
     inputs = tokenizer(return_prompt, return_tensors="pt").to(model.device)
     n_tokens = inputs.input_ids.numel()
 
@@ -538,16 +539,18 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
             1. load the file path/to/file/wanted/to/load.txt as string
             2. use python function Set on loaded data
             3. return set to user in nice response
-            </THINKING><function_prompt>{{"name":"prompt_for_function_call_0", "prompt": "load this file 'path/to/file/wanted/to/load.txt'"}}</function_prompt>
+            </THINKING>
+            <function_prompt>{{"name":"prompt_for_function_call_0", "prompt": "load this file 'path/to/file/wanted/to/load.txt'"}}</function_prompt>
 
 
     3. A user prompt might have a tool use in it for your information.
         It will come wrapped in these tags <FUNCTION CALLS AND RESULTS>
         </FUNCTION CALLS AND RESULTS> after the user prompt as a JSON formatted object.
-        It is up to you whether another tool use or function call is 
-        apropriate, or whether all the information is available to make
-        the best response to the user possible. You can also use a tool
-        on the output of a previous tool use. If another tool use is 
+        It is up to you whether a new tool use or function call is 
+        apropriate, or whether the information available is enough to make
+        the best response to the user possible. You can also make a new tool use
+        on the output of a previous tool use. refer to that output like this 
+        'chat_function_return[initial_prompt]['return_value']'. If a new tool use is 
         apropriate, respond like this, and number the prompt_for_function_call_#
         to be one more than the number of function call JSONs.
         Example:
@@ -555,10 +558,11 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
             {{"Load this file 'path/to/file/wanted/to/load.txt": {{"name":"test_functions.load_text", "arguments": {{'filename':"'path/to/file/wanted/to/load.txt'"}}, 'return_value':<text loaded from path/to/file/wanted/to/load.txt>}}}}</FUNCTION CALLS AND RESULTS>
             YOU(Assistant):<THINKING>
             1. load the file path/to/file/wanted/to/load.txt as string
-                -this was completed in the FUNCTION CALLS AND RESULTS section
+                -this was completed by function call 'Load this file 'path/to/file/wanted/to/load.txt"' in the FUNCTION CALLS AND RESULTS section
             2. use python function len on loaded string
             3. return length to user in nice response
-            </THINKING><function_prompt>{{"name":"prompt_for_function_call_1", "prompt": "what is the length of this string of text <text loaded from path/to/file/wanted/to/load.txt>"}}</function_prompt>
+            </THINKING>
+            <function_prompt>{{"name":"prompt_for_function_call_1", "prompt": "what is the length of this string of text chat_function_return["Load this file 'path/to/file/wanted/to/load.txt"]['return_value']"}}</function_prompt>
             
             
     4. Only include a response wrapped in <function_prompt></function_prompt> if you intend to get a new tool call
@@ -571,12 +575,12 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
         'Is there anything else I can help with?' like this example.
         Example:
             ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes."<FUNCTION CALLS AND RESULTS>
-            {{function call json about country music songs, with arguments and return value}}{{function call json about good jokes, with arguments and return value}}</FUNCTION CALLS AND RESULTS>
+            {{function_call_0 json about country music songs, with arguments and return value}}{{function_call_1 json about good jokes, with arguments and return value}}</FUNCTION CALLS AND RESULTS>
             YOU(Assistant):<THINKING>
             1. The user likes country music and wants more songs
-                -this was completed in the FUNCTION CALLS AND RESULTS section
+                -this was completed by function_call_0 in the FUNCTION CALLS AND RESULTS section
             2. The user likes joke and wants a joke
-                -this was completed in the FUNCTION CALLS AND RESULTS section
+                -this was completed by function_call_1 in the FUNCTION CALLS AND RESULTS section
             3. return response to user
             </THINKING>
             "Based on your interest in country music, I would recommend these titles <response based on return values from function call json 0>.
@@ -590,27 +594,48 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
 """
         return prompt
 
+
+    generation_config = model.generation_config
+    generation_config.update(
+        **{
+            **{
+                "use_cache": True,
+                "do_sample": True,
+                "temperature": 0.2,
+                "top_p": 1.0,
+                "top_k": 0,
+                "max_new_tokens": 2048,
+                "eos_token_id": tokenizer.eos_token_id,
+                "pad_token_id": tokenizer.eos_token_id,
+            },
+            **generation_config_overrides,
+        }
+    )
+
+
     extracted_function = None
     chat_function_return = {}
     exception_message = ""
 
     for attempt in range (5):
-        if attempt>0 : print("GENERATION ATTEMPT NUM {}".fomat(attempt))
+        if attempt>0 : print("GENERATION ATTEMPT NUM {}".format(attempt))
         try:
             model_input = input_prompt + str(exception_message)
 
             prompt = get_prompt(model_input)
+
+            model = model.eval()
             inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
 
             n_tokens = inputs.input_ids.numel()
 
             with torch.inference_mode():
-                generated_tokens = model.generate(**inputs, pad_token_id=tokenizer.eos_token_id, max_new_tokens=2048, do_sample=True)
+                generated_tokens = model.generate(**inputs, generation_config=generation_config)
 
             output = tokenizer.decode(
                 generated_tokens.squeeze()[n_tokens:], skip_special_tokens=False
             )
-            # print("MODEL INPUT IS: \n{}".format(model_input))
+            print("MODEL INPUT IS: \n{}".format(model_input))
             print("TOP PART")
             print("MODEL OUTPUT IS: \n{}".format(output))
             extracted_function = extract_single_function_prompt(output)
@@ -629,14 +654,14 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
     # print(extracted_function)
     total_function_calls = 0
     while extracted_function and total_function_calls < MAX_FUNCTION_CALLS:
-        if total_function_calls>0 : print("TOTAL FUNCTION CALLS  NUM {}".fomat(total_function_calls))
+        if total_function_calls>0 : print("TOTAL FUNCTION CALLS  NUM {}".format(total_function_calls))
 
         total_function_calls += 1   # only allow up to MAX_FUNCTION_CALLS for valid LLM function calls
         chat_function_return = {}
         initial_prompt = extracted_function["prompt"]
         num_func_calls = 0
         while num_func_calls < MAX_FUNCTION_CALLS: # retry up to MAX_FUNCTION_CALLS times to get a valid response
-            if num_func_calls>0 : print("NUM RETRY TO GET A VALID FUNCTION {}".fomat(num_func_calls))
+            if num_func_calls>0 : print("NUM RETRY TO GET A VALID FUNCTION {}".format(num_func_calls))
             num_func_calls += 1
             try:
                 # print("Input to generate function call is {}".format(extracted_function["prompt"]))
@@ -644,7 +669,7 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
                 # print("RESPONSE WHEN ASKING FOR FUNCTION CALL IS:\n{}".format(function_response))
                 try:
                     function = extract_function_calls(function_response)[0]
-                    # print(function)
+                    print("calling function: {}".format(function))
                     # execute extracted function
                     function["return_value"] = getattr(eval(function["name"].split(".", 1)[0]), function["name"].split(".", 1)[1])(**function["arguments"])
                     print("EXECUTED FUNCTION using getattr( {}, {} )".format(function["name"].split(".", 1)[0], function["name"].split(".", 1)[1]))
@@ -663,24 +688,25 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
         # query the original model and continue initial response generation
         exception_message = ""
         for attempt in range (5):
-            if attempt>0 : print("GENERATION ATTEMPT NUM {}".fomat(attempt))
+            if attempt>0 : print("GENERATION ATTEMPT NUM {}".format(attempt))
             # print("WE ARE IN THE BOTTOM GENERATION PART")
             try:
                 model_input = input_prompt + "<FUNCTION CALLS AND RESULTS>\n" + str(chat_function_return) + "</FUNCTION CALLS AND RESULTS>\n" + exception_message
 
                 prompt = get_prompt(model_input)
 
+                model = model.eval()
                 inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
                 n_tokens = inputs.input_ids.numel()
 
                 with torch.inference_mode():
-                    generated_tokens = model.generate(**inputs, pad_token_id=tokenizer.eos_token_id, max_new_tokens=2048, do_sample=True)
+                    generated_tokens = model.generate(**inputs, generation_config=generation_config)
 
 
                 output = tokenizer.decode(
                     generated_tokens.squeeze()[n_tokens:], skip_special_tokens=False
                 )
-                # print("MODEL INPUT IS: \n{}".format(model_input))
+                print("MODEL INPUT IS: \n{}".format(model_input))
                 print("MODEL OUTPUT IS: \n{}".format(output))
                 extracted_function = extract_single_function_prompt(output)
                 print("WE ARE IN THE BOTTOM GENERATION PART")
@@ -750,7 +776,7 @@ if __name__=="__main__":
         start = time.time()
         # prompt = input("user: ")
         # prompt = "I really like rap music and I want to learn new songs. I wanna hear a new joke too."
-        prompt = "Load this file, then tell me the exact length of the file. ./B_Cell_Model/B Cell Abm Netlogo Notes.txt"   # len is 2704
+        prompt = "Load this file, then tell me the exact length of its contents. ./B_Cell_Model/B Cell Abm Netlogo Notes.txt"   # len is 2704
         if prompt == "quit":
             break
         output, function_calls, model_input = chat_with_function_calling(prompt, model, tokenizer)
