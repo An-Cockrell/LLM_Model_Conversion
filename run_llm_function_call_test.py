@@ -595,6 +595,7 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
     exception_message = ""
 
     for attempt in range (5):
+        if attempt>0 : print("GENERATION ATTEMPT NUM {}".fomat(attempt))
         try:
             model_input = input_prompt + str(exception_message)
 
@@ -628,11 +629,14 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
     # print(extracted_function)
     total_function_calls = 0
     while extracted_function and total_function_calls < MAX_FUNCTION_CALLS:
+        if total_function_calls>0 : print("TOTAL FUNCTION CALLS  NUM {}".fomat(total_function_calls))
+
         total_function_calls += 1   # only allow up to MAX_FUNCTION_CALLS for valid LLM function calls
         chat_function_return = {}
         initial_prompt = extracted_function["prompt"]
         num_func_calls = 0
         while num_func_calls < MAX_FUNCTION_CALLS: # retry up to MAX_FUNCTION_CALLS times to get a valid response
+            if num_func_calls>0 : print("NUM RETRY TO GET A VALID FUNCTION {}".fomat(num_func_calls))
             num_func_calls += 1
             try:
                 # print("Input to generate function call is {}".format(extracted_function["prompt"]))
@@ -659,6 +663,7 @@ def chat_with_function_calling(input_prompt, model, tokenizer, generation_config
         # query the original model and continue initial response generation
         exception_message = ""
         for attempt in range (5):
+            if attempt>0 : print("GENERATION ATTEMPT NUM {}".fomat(attempt))
             # print("WE ARE IN THE BOTTOM GENERATION PART")
             try:
                 model_input = input_prompt + "<FUNCTION CALLS AND RESULTS>\n" + str(chat_function_return) + "</FUNCTION CALLS AND RESULTS>\n" + exception_message
