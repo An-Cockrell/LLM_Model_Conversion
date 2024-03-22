@@ -141,8 +141,6 @@ def generate_function_call(input_prompt, model, tokenizer, generation_config_ove
     You are a helpful assistant who is an expert at choosing the correct function to call for a given task.
     You know about only the following modules and functions.
 
-        Built in python functions.
-
         Functions that can be called from the test_functions module:
             BookRecommendation
             Joke
@@ -151,7 +149,9 @@ def generate_function_call(input_prompt, model, tokenizer, generation_config_ove
             LoadText
 
         All functions in the numpy module. Refer to these functions like 'np.function_name'.
-    
+        Built in python function. Refer to them functions as 'builtins.function_name'
+
+        
     You will respond with only the name of the function, formatted as a python dict, wrapped in this tag <function_name></function_name>. Follow this example:
         Example:
             ME(User): I am looking to load the file 'test6.csv' using the LoadFile function from the test_functions module
