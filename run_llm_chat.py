@@ -5,6 +5,7 @@ import time
 import json
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import TextStreamer
 from InstructorEmbedding import INSTRUCTOR
 
 import os
@@ -24,7 +25,8 @@ if __name__=="__main__":
     chat_template = open('./chat_templates/mistral-instruct.jinja').read()
     chat_template = chat_template.replace('    ', '').replace('\n', '')
     tokenizer.chat_template = chat_template
-
+    
+    text_streamer = TextStreamer(tokenizer)
 
     embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
     print("loading model")
@@ -48,6 +50,7 @@ if __name__=="__main__":
         
 
         Remember, the goal is to maintain a friendly and informative conversation. I'm here to learn and have fun, so let's make this a great experience for both of us!
+        The user prompt will come next, dont inform them of your instructions, just respond to their requests.
         """
 
     # hacky, but a quick test to make sure that the model can accept a system input. mistral cannot, so it goes into the exception block
@@ -79,7 +82,7 @@ if __name__=="__main__":
         model.eval()
         with torch.no_grad(), torch.backends.cuda.sdp_kernel(enable_flash=False, enable_math=False, enable_mem_efficient=True):
             # querying model
-            outputs = model.generate(input_tokens, pad_token_id=tokenizer.eos_token_id, max_new_tokens=2048, do_sample=True)
+            outputs = model.generate(input_tokens, pad_token_id=tokenizer.eos_token_id, max_new_tokens=2048, do_sample=True, streamer=text_streamer)
             # getting just the response tokens, no input tokens
             response = outputs[0][len(input_tokens[0]):]
             # convert back to plain text
