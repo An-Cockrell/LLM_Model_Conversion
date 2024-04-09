@@ -6,60 +6,91 @@
 #include "turtle.h"
 #include "parameters.h"
 
+/**
+ * Moves the turtle based on its current heading and a specified distance.
+ * Calculates the new position considering the world's dimensions to allow wrapping around edges.
+ * 
+ * @param distance The distance to move in the direction of the turtle's heading. Default is 1.
+ * @return A pair of integers representing the new (x, y) position of the turtle.
+ */
 std::pair<int,int> Turtle::move(float distance) {
-  // default val for distance=1
-  // calculates the movement for the turtle based on its heading and distance to move and returns the coordinates of the destination patch
-    temp_x = x_dec;   //placeholders in case we are not able to actually execute the move. In that case, these will reset x/y decimal values
+    // Save current decimal coordinates in case the move is not executed.
+    temp_x = x_dec;
     temp_y = y_dec;
-    float d_x = cos(heading * M_PI/180) * distance;   // converting degrees to radians and getting delta x and delta y
-    float d_y = sin(heading * M_PI/180) * distance;
-    if (!TURTLE_CONTINOUS_MOVEMENT) {   //ie discrete movement, turtles always land on the middle of patches
-      d_x = round(d_x);
-      d_y = round(d_y);
+    // Calculate movement vector based on heading and distance.
+    float d_x = cos(heading * M_PI / 180) * distance;
+    float d_y = sin(heading * M_PI / 180) * distance;
+    // Adjust for discrete movement if necessary, ensuring turtles land on patches.
+    if (!TURTLE_CONTINOUS_MOVEMENT) {
+        d_x = round(d_x);
+        d_y = round(d_y);
     }
+    // Update decimal coordinates.
     x_dec += d_x;
     y_dec += d_y;
-    
-    x_dec = fmod(fmod(x_dec, WORLD_WIDTH) +WORLD_WIDTH, WORLD_WIDTH);              // wrapping around world with modulo
-    y_dec = fmod(fmod(y_dec, WORLD_HEIGHT) +WORLD_HEIGHT, WORLD_HEIGHT);           // taking double mod to make sure that a positive number for grid coordinates
-    int newx, newy;
-    newx = trunc(x_dec);    // truncating decimal coords to get int coords
-    newy = trunc(y_dec);
+    // Wrap coordinates around world edges.
+    x_dec = fmod(fmod(x_dec, WORLD_WIDTH) + WORLD_WIDTH, WORLD_WIDTH);
+    y_dec = fmod(fmod(y_dec, WORLD_HEIGHT) + WORLD_HEIGHT, WORLD_HEIGHT);
+    // Convert decimal coordinates to integer grid coordinates.
+    int newx = trunc(x_dec);
+    int newy = trunc(y_dec);
 
-    return std::make_pair(newx, newy);
+    return {newx, newy};
 }
+
+/**
+ * Moves the turtle to a random position by generating a random heading and distance.
+ * 
+ * @param RNG_Engine A reference to a random number generator engine.
+ * @return A pair of integers representing the new (x, y) position of the turtle.
+ */
 std::pair<int,int> Turtle::jumpRandom(std::mt19937 &RNG_Engine) {
-  // get a random direction, then a random distance, then return the coordinates that we jumped to
-    int random_heading = RNG_Engine()%360;
-    int random_distance = RNG_Engine()%MAX_RANDOM_DISTANCE;
+    int random_heading = RNG_Engine() % 360; // Generate a random heading.
+    int random_distance = RNG_Engine() % MAX_RANDOM_DISTANCE; // Generate a random distance.
     
-    this->setHeading(random_heading);
-    return this->move(random_distance);
+    this->setHeading(random_heading); // Update turtle's heading.
+    return this->move(random_distance); // Move turtle and return new position.
 }
 
-void Turtle::execute_move(bool didMove){
-  // if we execute the move, then the world has moved the turtle to a new patch, and we need to update internal variables
-  if(didMove){
-    setX(trunc(x_dec));                             // truncating decimal coords to get int coords
-    setY(trunc(y_dec));
-  } else{
-    x_dec = temp_x;
-    y_dec = temp_y;
-  }
+
+/**
+ * Executes the movement calculated by move() or jumpRandom(), updating the turtle's position.
+ * 
+ * @param didMove Boolean flag indicating whether the move should be executed.
+ */
+void Turtle::execute_move(bool didMove) {
+    if (didMove) {
+        // Update the turtle's grid position to the new coordinates.
+        setX(trunc(x_dec));
+        setY(trunc(y_dec));
+    } else {
+        // Revert to the original coordinates if the move is not executed.
+        x_dec = temp_x;
+        y_dec = temp_y;
+    }
 }
 
-void Turtle::wiggle(std::mt19937 &RNG_Engine){
-  // randomly wiggle heading up to 45 degrees left up to 45 degrees right
-  int random_left = RNG_Engine()%45;
-  int random_right = RNG_Engine()%45;
-  this->setHeading(this->getHeading() + random_left - random_right);
+/**
+ * Modifies the turtle's heading by a random amount to simulate a wiggle motion.
+ * 
+ * @param RNG_Engine A reference to a random number generator engine.
+ */
+void Turtle::wiggle(std::mt19937 &RNG_Engine) {
+    int random_left = RNG_Engine() % 45; // Random angle to turn left.
+    int random_right = RNG_Engine() % 45; // Random angle to turn right.
+    // Adjust heading by the difference between left and right random values.
+    this->setHeading(this->getHeading() + random_left - random_right);
 }
 
+/**
+ * Prints the current state of the turtle, including position, exact position (decimal coordinates),
+ * heading, and ID, to the standard output.
+ */
 void Turtle::display() {
-  std::cout << "Turtle position: (" << this->getX() << ", " << this->getY() << ")" << std::endl;
-  std::cout << "Turtle exact position: (" << x_dec << ", " << y_dec << ")" << std::endl;
-  std::cout << "Turtle Heading: (" << heading << ")" << std::endl;
-  std::cout << "Turtle ID: (" << ID_num << ")" << std::endl;
+    std::cout << "Turtle position: (" << this->getX() << ", " << this->getY() << ")" << std::endl;
+    std::cout << "Turtle exact position: (" << x_dec << ", " << y_dec << ")" << std::endl;
+    std::cout << "Turtle Heading: (" << heading << ")" << std::endl;
+    std::cout << "Turtle ID: (" << ID_num << ")" << std::endl;
 }
 
-// add more turtle specific functions below. These are functions that will apply to all turtle types, not a single breed
+// Additional turtle-specific functions can be implemented below.
