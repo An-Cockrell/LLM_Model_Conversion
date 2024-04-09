@@ -5,46 +5,104 @@
 #include "agent.h"
 #include <random>
 
+/**
+ * Class representing a turtle in the simulation.
+ * Inherits from the Agent class and extends it with turtle-specific attributes and behaviors,
+ * such as ID, heading, age, and movement mechanics.
+ */
 class Turtle : public Agent{
+      /**
+     * Constructor for the Turtle class.
+     * Initializes a turtle with specific coordinates, ID, and optionally heading.
+     * The decimal coordinates are also initialized to the given integer coordinates.
+     *
+     * @param x The x-coordinate of the turtle's position.
+     * @param y The y-coordinate of the turtle's position.
+     * @param ID_num The unique identifier for the turtle.
+     * @param heading The initial heading (direction) of the turtle. Defaults to 0.
+     */
   public :
-    Turtle(int x, int y, int ID_num, int heading=0) : Agent(x, y), ID_num(ID_num), heading(heading) {x_dec=x; y_dec=y;};
-    virtual ~Turtle() = default;
+    Turtle(int x, int y, int ID_num, int heading = 0) : Agent(x, y), ID_num(ID_num), heading(heading) {
+        x_dec = x;
+        y_dec = y;
+    };
+
+    virtual ~Turtle() = default; // Default destructor.
 
   private:
-    int ID_num;
-    int heading;
-    int age;
-    float x_dec; //x and y decimal coordinates
-    float y_dec;
-    float temp_x; // temporary coords for turtle move, before actual turtle coords are moved in case destination patch is full.
-    float temp_y; // Turtle cant know about the world cause circular dependency in #include, so world will handle turtle movement between patches
+    int ID_num; // Unique identifier for the turtle.
+    int heading; // Current direction the turtle is facing.
+    int age; // Age of the turtle.
+    float x_dec; // X-coordinate in decimal, for precise movement.
+    float y_dec; // Y-coordinate in decimal, for precise movement.
+    float temp_x; // Temporary x-coordinate, used during movement calculations.
+    float temp_y; // Temporary y-coordinate, used during movement calculations.
     
+    // More variables specific to turtles can be added here.
 
-    // add more variables that apply to all turtles here for the specific netlogo model being ported
+
 
   public:
-    std::pair<int,int> move(float distance=1);
-    std::pair<int,int> jumpRandom(std::mt19937 &RNG_Engine);
+    /**
+     * Moves the turtle a specified distance in its current heading.
+     *
+     * @param distance The distance to move. Defaults to 1.
+     * @return A pair of integers representing the new coordinates after moving.
+     */
+    std::pair<int, int> move(float distance = 1);
+
+    /**
+     * Moves the turtle to a random position based on a random heading and distance.
+     *
+     * @param RNG_Engine A reference to the random number generator engine.
+     * @return A pair of integers representing the new coordinates after jumping.
+     */
+    std::pair<int, int> jumpRandom(std::mt19937 &RNG_Engine);
+
+    /**
+     * Executes the movement of the turtle, updating its position if the move was successful.
+     *
+     * @param didMove A boolean indicating whether the move was successful.
+     */
     void execute_move(bool didMove);
-    void wiggle(std::mt19937 &RNG_Engine);
+
+    /**
+     * Randomly adjusts the turtle's heading to simulate a wiggle movement.
+     *
+     * @param RNG_Engine A reference to the random number generator engine.
+     */
+    void wiggle(std::mt19937 &RNG_Engine);    void display();
+
+// Displays the turtle's current state to the standard output.
     void display();
 
-    int getID() const {return ID_num;};
+    // Getter for the turtle's ID.
+    int getID() const;
     
-    void setHeading(int newHeading){heading = newHeading;};
-    int getHeading() const {return heading;};
+    // Sets the turtle's heading.
+    void setHeading(int newHeading);
     
-    void setAge(int newAge){age=newAge;};
-    void getAge() const { return age;};
+    // Getter for the turtle's heading.
+    int getHeading() const;
     
-    float get_x_dec() const {return x_dec;}       // already has regular getX() and getY() from agent parent class
-    float get_y_dec() const {return y_dec;}
+    // Sets the turtle's age.
+    void setAge(int newAge);
+    
+    // Getter for the turtle's age.
+    void getAge() const;
+    
+    // Getters for the turtle's precise (decimal) x and y coordinates.
+    float get_x_dec() const;
+    float get_y_dec() const;
 
 
+
+    // Comparison operators to check if two turtles are the same based on their ID.
     bool operator== (const Turtle& turt2){return this->ID_num==turt2.ID_num;};
     bool operator== (const Turtle* turt2){return this->ID_num==turt2->ID_num;};
+
     
-    // add more turtle specific functions below. These are functions that will apply to all turtle types, not a single breed
+    // More turtle-specific functions can be added here.
 
 };
 

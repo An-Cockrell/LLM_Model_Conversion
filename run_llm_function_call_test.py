@@ -528,103 +528,38 @@ Please try again to generate a valid function call.<|im_end|>
 def chat_with_function_calling(input_prompt, model, tokenizer, generation_config_overrides={}, MAX_FUNCTION_CALLS=3):
     def get_prompt(input_prompt):
         prompt=f"""<|im_start|>system
-    You are a chat bot assistant who likes to use tools when you answer
-    a user prompt. You can use a tool, like a calling a function to load
-    a file or query an API, to best respond to a user prompt. If a query 
-    has an exact answer, you will use a tool to find the exact answer. 
-    Do not use a tool for language processing tasks and summarization. If
-    using a tool doesn't make sense to answer the user prompt, respond as normal.
-    You are very concise in your answers either write a singlular 
-    instruction to get to use a tool, or answer the user's question.
+You are a chatbot assistant designed to efficiently integrate tools, like API calls or file loading functions, into your responses when needed. Your responses are concise and directly address the user's query, either by providing information directly or by indicating a specific tool action required to obtain the answer.
 
-    Here is how you must respond to my messages:
+Here's how to proceed with user prompts:
 
-    0. Before you respond, you will make a plan for how to answer the 
-        user prompt, and display your explain your plan as you 'thinking' 
-        by wrapping your plan in this tag <THINKING></THINKING>. You might
-        Also receive a plan of action already. It will be wrapped in this 
-        tag <PREVIOUS THOUGHTS></PREVIOUS THOUGHTS>. Consider the previous plan,
-        the user prompt, and the functions that have been called and their
-        return values as you are planning. After thinking, execute the 
-        next step of the plan.
+0. **Planning**: 
+   - Upon receiving a prompt, think about your response strategy and summarize it within <THINKING></THINKING> tags.
+   - If a previous plan is provided (<PREVIOUS THOUGHTS>), consider it and any tool results (<FUNCTION CALLS AND RESULTS>) in your planning.
 
-        
-    1. If you need to give a subjective response or a response where
-        tool use does not make sense, respond as your normally would.
-        This is generally what you would do. Tool use is only necessary
-        if you need a specific answer, like solving a math problem, or 
-        getting the contents of a file, or something a built in python
-        function could do.
-            
-        
-    2. When you deem it apropriate to use a tool, you will create
-        a single natural language statment that is an instruction for
-        what you expect to recieve from the tool. You will be very 
-        specific about giving full inputs arguments. Only have one tool
-        use or instruction per statemet. When you respond, you must
-        respond with the instruction or tool use prompt contained in
-        JSON format and wrapped between this tag '<function_prompt>{{function prompt goes here}}</function_prompt>'.
-        Example:
-            ME(User): "I want to load this file path/to/file/wanted/to/load.txt and tell me what characters are in it"
-            YOU(Assistant):<THINKING>
-            1. load the file path/to/file/wanted/to/load.txt as string
-            2. use python function Set on loaded data
-            3. return set to user in nice response
-            </THINKING>
-            <function_prompt>{{"name":"prompt_for_function_call_0", "prompt": "load this file 'path/to/file/wanted/to/load.txt'"}}</function_prompt>
+1. **Responding Without Tools**:
+   - If the query is subjective or doesn't benefit from tool usage (like opinions or summaries), respond normally.
 
+2. **Using Tools**:
+   - When a specific answer requires a tool (e.g., to fetch data, perform calculations), instruct the tool use in a single, clear statement.
+   - Format this instruction in JSON, enclosed in `<function_prompt></function_prompt>` tags. Specify full input arguments and ensure only one discrete action per instruction.
 
-    3. A user prompt might have a tool use in it for your information.
-        It will come wrapped in these tags <FUNCTION CALLS AND RESULTS>
-        </FUNCTION CALLS AND RESULTS> after the user prompt as a JSON formatted object.
-        It is up to you whether a new tool use or function call is 
-        apropriate, or whether the information available is enough to make
-        the best response to the user possible. You can also make a new tool use
-        on the output of a previous tool use. refer to that output like this 
-        'chat_function_return[initial_prompt]['return_value']'. If a new tool use is 
-        apropriate, respond like this, and number the prompt_for_function_call_#
-        to be one more than the number of function call JSONs.
-        Example:
-            ME(User): "Load this file path/to/file/wanted/to/load.txt and tell me how long it is"<FUNCTION CALLS AND RESULTS>
-            {{"prompt_for_function_call_0": {{"name":"test_functions.loadText", "arguments": {{'filename':"'path/to/file/wanted/to/load.txt'"}}, 'return_value':<text loaded from path/to/file/wanted/to/load.txt>,  "prompt": "load this file 'path/to/file/wanted/to/load.txt'"}}}}</FUNCTION CALLS AND RESULTS>
-            YOU(Assistant):<THINKING>
-            1. load the file path/to/file/wanted/to/load.txt as string
-                -this was completed by function call 'Load this file 'path/to/file/wanted/to/load.txt"' in the FUNCTION CALLS AND RESULTS section
-            2. use python function len on loaded string
-            3. return length to user in nice response
-            </THINKING>
-            <function_prompt>{{"name":"prompt_for_function_call_1", "prompt": "what is the length of this string of text chat_function_return['prompt_for_function_call_0]['return_value']"}}</function_prompt>
-            
-            
-    4. Only include a response wrapped in <function_prompt></function_prompt> if you intend to get a new tool call
+3. **Interpreting Tool Results**:
+   - The user will use the `<FUNCTION CALLS AND RESULTS>` tag to understand previous tool outputs. Decide if you need further tool action or if you can now respond effectively.
 
-
-    5. If you do not need further tool use to get the best answer possible
-        to the user prompt, then respond to the user as you normally would.
-        Using the function returns to inform your answer, generate a nicely
-        formatted response. Be helpful with your response, and and it with
-        'Is there anything else I can help with?' like this example.
-        Example:
-            ME(User): "I really like country music and I want to listen to more. I also like jokes sometimes."<FUNCTION CALLS AND RESULTS>
-            {{function_call_0 json about country music songs, with arguments and return value}}{{function_call_1 json about good jokes, with arguments and return value}}</FUNCTION CALLS AND RESULTS>
-            YOU(Assistant):<PREVIOUS THOUGHTS>
-            1. The user likes country music and wants more songs
-                -this was completed by function_call_0 in the FUNCTION CALLS AND RESULTS section
-            2. The user likes joke and wants a joke
-            3. return response to user
-            </PREVIOUS THOUGHTS>
-            <THINKING>
-            1. The user likes country music and wants more songs
-                -this was completed by function_call_0 in the FUNCTION CALLS AND RESULTS section
-            2. The user likes joke and wants a joke
-                -this was completed by function_call_1 in the FUNCTION CALLS AND RESULTS section
-            3. return response to user
-            </THINKING>
-            "Based on your interest in country music, I would recommend these titles <response based on return values from function call json 0>.
-            I heard you like jokes too, well have you heard this one? <response based on return values from function call json 1>
-
-            
-            Is there anything else I can help you with?<|im_end|>
+4. **Final Response**:
+   - If no new tool action is needed, use the tool results to provide a complete, helpful answer. Conclude with an offer of further assistance.
+```
+Example Response Structure:
+<PREVIOUS THOUGHTS>
+- Summary of previous planning or tool results considered.
+</PREVIOUS THOUGHTS>
+<THINKING>
+- New plan based on the user prompt and any previous tool results.
+</THINKING>
+If a new tool action is needed:
+<function_prompt>{{"prompt": "Specific tool action in JSON format"}}</function_prompt>
+Otherwise, respond directly to the user, using tool results if applicable, and conclude with an offer of further help.
+```<|im_end|>
 <|im_start|>user
 {input_prompt}<|im_end|>
 <|im_start|>assistant
@@ -796,9 +731,9 @@ if __name__=="__main__":
     # MODELS DECLARATION
     model_name = "../LLM_Models/Mistral/OpenHermes-2.5-Mistral-7B"    # Path to chat model and 
     # model_name = "../LLM_Models/Mistral/Mistral-7B-Instruct-v0.2"    # Path to chat model and 
+    # model_name = "../LLM_Models/Mixtral/Mixtral-8x7B-Instruct-v0.1"            # Text model and 
     print("loading tokenizer")
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
-    # tokenizer.pad_token = tokenizer.eos_token
     # https://github.com/chujiezheng/chat_templates
     # if using MISTRAL INSTRUCT, which does not accept a system prompt, use this instead?
     # print('###### Corrected Chat Template ######')
@@ -806,6 +741,7 @@ if __name__=="__main__":
     # chat_template = chat_template.replace('    ', '').replace('\n', '')
     # tokenizer.chat_template = chat_template
 
+    tokenizer.pad_token = tokenizer.eos_token
 
     embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
     print("loading model")
