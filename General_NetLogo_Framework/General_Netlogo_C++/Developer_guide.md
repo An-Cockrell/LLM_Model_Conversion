@@ -12,8 +12,7 @@ Derived from the Agent class, Patch represents a stationary agent that models a 
 Turtle extends the Agent class to represent mobile agents within the simulation. These agents can move across patches, interact with other agents, and modify environment variables. The Turtle class introduces additional attributes and methods related to mobility (such as heading and movement functions), along with simulation-specific variables. It is an abstract class, meant to be subclassed by specific types of mobile agents that require specialized behaviors or properties.
 
 4. World
-The World class acts as the main handler for the entire simulation. It maintains the grid of Patch objects and manages the collection of Turtle and other derived agent instances. The World is responsible for initializing the simulation environment, executing simulation steps (ticks), and applying global rules such as diffusion and evaporation. It uses a random number generator to support stochastic behaviors and processes within the simulation.
-
+The World class acts as the main handler for the entire simulation. It maintains the grid of Patch objects and manages the collection of Turtle and other derived agent instances. Additionally, global simulation variables are maintained as part of World. The World is responsible for initializing the simulation environment, executing simulation steps (ticks), and applying global rules such as diffusion and evaporation. It uses a random number generator to support stochastic behaviors and processes within the simulation.
 
 Functionality and Interactions
 Initialization: At the start of the simulation, the World initializes itself by creating patches according to the defined grid size and populating the environment with Turtle agents and any other required entities.

@@ -35,15 +35,20 @@ if __name__=="__main__":
 
     streamer = TextStreamer(tokenizer)
 
-    embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
+    # embedding_model_name = "Embedding_Models/instructor-xl"         # path embedding model
     print("loading model")
-    model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, device_map="auto")
+    model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True, device_map="auto", torch_dtype=torch.float16)
+    print(model.hf_device_map)
     print("MODEL LOADED")
 
-    developer_guide_text = open('LLM_Model_Conversion/General_NetLogo_Framework/General_Netlogo_C++/Developer_guide.md').read()
+    developer_guide_text = open('./General_NetLogo_Framework/General_Netlogo_C++/Developer_guide.md').read()
 
-    simulation_framework_txt = open('LLM_Model_Conversion/General_NetLogo_Framework/General_Netlogo_C++/headers_commented.md').read()
+    simulation_framework_txt = open('./General_NetLogo_Framework/General_Netlogo_C++/headers_commented.md').read()
 
+
+
+
+    
     system_prompt = f"""
         You are a chat bot that works for the An-Cockrell research lab at the University of Vermont (UVM). Your main duty is to generate code that can be added to a specific C++ modeling simulation framework.
 
@@ -95,7 +100,7 @@ if __name__=="__main__":
 
                 model_outputs[prompt] = response_plain_text
                 prompt = ""
-                with open("./LLM_output_files/iirabm_descriptions.json", "w") as f:
+                with open("./LLM_output_files/iirabm_header_responses.json", "w") as f:
                     json.dump(model_outputs, f, indent=6)
 
 
