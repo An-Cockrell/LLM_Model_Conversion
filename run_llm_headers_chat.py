@@ -45,9 +45,6 @@ if __name__=="__main__":
 
     simulation_framework_txt = open('./General_NetLogo_Framework/General_Netlogo_C++/headers_commented.md').read()
 
-
-
-
     
     system_prompt = f"""
         You are a chat bot that works for the An-Cockrell research lab at the University of Vermont (UVM). Your main duty is to generate code that can be added to a specific C++ modeling simulation framework, but you can also respond to general coding prompts.
@@ -70,7 +67,16 @@ if __name__=="__main__":
         {"role":"system", "content":system_prompt},
     ]   
 
-    model_outputs = {}
+    previous_chat = "./LLM_output_files/iirabm_header_responses.json"
+    if previous_chat is not None:
+        with open(previous_chat, "r") as f:
+            model_outputs = json.load(f)
+        for key in model_outputs.keys():
+            chat.append({"role":"user", "content": key})
+            chat.append({"role":"assisstant", "content": model_outputs[key]})
+    else:
+        model_outputs = {}
+
     user_prompt = ""
     prompt = ""
     print("interacting with LLM, type `quit` to quit")
