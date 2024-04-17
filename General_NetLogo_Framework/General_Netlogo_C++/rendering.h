@@ -28,15 +28,15 @@ public:
   RenderingEngine(World *world);
   virtual ~RenderingEngine ();
   
-  std::tuple<int, int, int> getColor(const std::string& color);
+  std::tuple<int, int, int> getColor(const std::string& color); // returns rgb components from a string label for color
   void drawCircle(double centerX, double centerY, double radius=GRID_SIZE/2, const std::string& color="red", int alpha=SDL_ALPHA_OPAQUE);
   void drawSquare(int x, int y, int size=GRID_SIZE, const std::string& color="red", int alpha=SDL_ALPHA_OPAQUE);
   void drawLine(double startX, double startY, double endX, double endY, const std::string& color="black", int alpha=SDL_ALPHA_OPAQUE);
   void setBackgroundColor(const std::string& color="red");
   void render();
   
-  void renderAllPatches();
-  void renderAllTurtles();
+  void renderAllPatches();  // draws patches as squares
+  void renderAllTurtles();  // draws turtles as circles 
 };
 
 

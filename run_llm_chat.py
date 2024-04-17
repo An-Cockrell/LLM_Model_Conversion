@@ -15,7 +15,9 @@ import re
 if __name__=="__main__":
     # mixtral
     # MODELS DECLARATION
-    model_name = "../LLM_Models/Mistral/Mistral-7B-Instruct-v0.2"    # Path to chat model and 
+    # model_name = "../LLM_Models/Mistral/Mistral-7B-Instruct-v0.2"    # Path to chat model
+    model_name = "../LLM_Models/Mixtral/Mixtral-8x7B-Instruct-v0.1"    # Path to BIG chat model
+
     print("loading tokenizer")
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
     tokenizer.pad_token = tokenizer.eos_token

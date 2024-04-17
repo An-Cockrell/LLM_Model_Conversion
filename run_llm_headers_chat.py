@@ -23,6 +23,7 @@ if __name__=="__main__":
     # mixtral
     # MODELS DECLARATION
     model_name = "../LLM_Models/Mistral/Mistral-7B-Instruct-v0.2"    # Path to chat model and 
+    # model_name = "../LLM_Models/Mixtral/Mixtral-8x7B-Instruct-v0.1"    # Path to chat model and 
     print("loading tokenizer")
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
     tokenizer.pad_token = tokenizer.eos_token
@@ -43,31 +44,23 @@ if __name__=="__main__":
 
     developer_guide_text = open('./General_NetLogo_Framework/General_Netlogo_C++/Developer_guide.md').read()
 
-    simulation_framework_txt = open('./General_NetLogo_Framework/General_Netlogo_C++/headers_commented.md.c').read()
+    simulation_framework_txt = open('./General_NetLogo_Framework/General_Netlogo_C++/headers_generated.md.c').read()
 
     def generate_system_prompt(dev_guide=developer_guide_text, sim_framework=simulation_framework_txt):
         system_prompt = f"""
-            You are a chat bot assisting the An-Cockrell research lab at the University of Vermont (UVM). Your primary role is to generate C++ code that integrates seamlessly into a specific modeling simulation framework. You'll respond to inputs that might include natural language instruction, but will always include blocks of NetLogo code accompanied by a plain English description of their functionality. Your outputs will either be new C++ header files or modifications to existing ones within the framework.
-
-            For generating new header files, provide the complete header file content, ensuring it aligns with the simulation framework's coding standards and architectural design, as described in the developer's guide.
+            You are a chat bot assisting the An-Cockrell research lab at the University of Vermont (UVM). Your primary role is to generate C++ code that integrates seamlessly into a specific modeling simulation framework. You'll respond to inputs that might include natural language instruction, and will usually include blocks of NetLogo code accompanied by a plain English description of their functionality. Your outputs will be modifications to existing code within the framework you will be given.
 
             When modifications to existing files are needed, clearly indicate the specific file and location within that file where the new code should be inserted. Use the following format to highlight where to insert the new code:
 
             ```
-            .
-            .
-            .
             {{three lines of existing code preceding the insertion point}}
 
             {{Here is where I want to insert the new code}}
 
             {{three lines of existing code following the insertion point}}
-            .
-            .
-            .
             ```
 
-            Please specify the filename at the start of your response when modifying existing code. If the same modification pattern applies to multiple locations, illustrate it once in detail, then note that the process can be repeated similarly for the other instances.
+            Please specify the filename at the start of your response when modifying existing code. If the same modification pattern applies to multiple locations, illustrate it once in detail, then note specifically what other instances that the process should be applied to.
 
             Below is the current state of the simulation framework and the developer's guide. Use these as references to ensure consistency and integration with the existing codebase.
 
@@ -79,7 +72,7 @@ if __name__=="__main__":
             {dev_guide}
             /end Developers Guide
 
-            Your code should adhere to the principles outlined in the developer's guide, maintaining the framework's conventions and overall design philosophy. Where appropriate, augment existing classes or suggest new ones, providing detailed comments on the implementation strategy for each piece of generated code.
+            Your code should adhere to the principles outlined in the developer's guide, maintaining the framework's conventions and overall design philosophy. Provide detailed comments on the implementation strategy for each piece of generated code.
         """
         return system_prompt
 
@@ -130,7 +123,7 @@ if __name__=="__main__":
 
                 model_outputs[prompt] = response_plain_text
                 prompt = ""
-                with open("./LLM_output_files/iirabm_header_responses1.json", "w") as f:
+                with open("./LLM_output_files/iirabm_header_responses2.json", "w") as f:
                     json.dump(model_outputs, f, indent=6)
 
             updated_simulation_framework_txt = open('./General_NetLogo_Framework/General_Netlogo_C++/headers_generated.md.c').read()
