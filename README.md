@@ -27,8 +27,29 @@ Even an LLM with 1000k tokens that could process a code base like this will be p
 
 I suspect we'll see a class 'generative languages' emerge in the future that walk the other direction so they are easier to use with LLM and code-gen."""
 
-
+##
 https://pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html
 get a futureWarning when using 
 `    with torch.no_grad(), torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=True):`
 but according to the docs, it seems this is the correct useage?
+
+## Installation notes
+In order to render the simulation graphically so that you can see what is happening, this uses SDL2.
+The simulation can be paused by focusing on the simulation graphics window and pressing spacebar.
+To change the render size, change the `GRID_SIZE` parameter in `rendering.h` to be smaller for a smaller rendering, or larger for a bigger one.
+
+
+This implementation requires SDL2 to be installed. This is a graphics rendering library for C++.
+It can be installed with the following commands. Instructions were taken from https://wiki.libsdl.org/SDL2/Installation
+```
+git clone https://github.com/libsdl-org/SDL.git -b SDL2
+cd SDL
+mkdir build
+cd build
+../configure
+make
+sudo make install
+```
+
+
+compile this using `source ./compile.sh` and run using `./test.o`
