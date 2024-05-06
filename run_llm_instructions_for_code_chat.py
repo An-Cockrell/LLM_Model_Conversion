@@ -84,8 +84,8 @@ if __name__=="__main__":
         {"role":"system", "content":system_prompt},
     ]   
 
-    # previous_chat = "./LLM_output_files/iirabm_header_responses1.json"
-    previous_chat = None
+    previous_chat = "./LLM_output_files/iirabm_header_instructions3.json"
+    # previous_chat = None
     if previous_chat is not None:
         with open(previous_chat, "r") as f:
             model_outputs = json.load(f)
