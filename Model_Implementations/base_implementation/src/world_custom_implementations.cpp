@@ -2,15 +2,28 @@
 #include "world.h"
 
 
+// ###############################################
+// ##########END USER MIGHT WANT TO EDIT##########
+// #####IN THIS SECTION TO CHANGE PATCH SETUP#####
+// ###############################################
 // Sets up the initial patches in the world.
 void World::setup_patches() {
    for (int x = 0; x < WORLD_WIDTH; ++x) {
        for (int y = 0; y < WORLD_HEIGHT; ++y) {
-           add_patch(x, y);
+          add_patch(x, y);
+          // ######################################
+          // #END USER SHOULD EDIT IN THIS SECTION#
+          // #TO ADD INITIAL VARIABLES TO PATCHES##
+          // ######################################
        }
    }
 }
 
+
+// ###############################################
+// ############ END USER SHOULD EDIT #############
+// ########### UPDATE TURTLES FUNCTION ###########
+// ###############################################
 // updates tracking vectors and gets rid of turtles that have died
 void World::updateTurtleVectors(){
     // erasing the turtle weak pointers that are now a null pointer because they have been reset
@@ -21,11 +34,26 @@ void World::updateTurtleVectors(){
     all_turtles.end());
 
     // now need to erase the shared pointers that were reset with kill()
-    // for example:  all_pmns.erase(std::remove(all_pmns.begin(), all_pmns.end(), nullptr), all_pmns.end());
-    // implement erasure for all turtle shared_ptr vectors here
+    // ##################################################
+    // #######END USER SHOULD EDIT IN THIS SECTION#######
+    // ####ADD CODE TO RESET FOR EACH TRACKING VECTOR####
+    // #COPY AND REPLACE'all_examples' WITH CUSTOM NAMES#
+    // ##################################################
+  //  all_examples.erase(std::remove_if(
+  //      all_examples.begin(), all_examples.end(),
+  //      [](const std::shared_ptr<Turtle>& sp) {
+  //          return !sp;  // Check if the shared_ptr is empty
+  //      }
+  //  ), all_examples.end());
+
+    // implement erasure for all other turtle shared_ptr vectors here
+
+
 }
 
-
+// ###############################################
+// ##### END USER SHOULD EDIT SETUP FUNCTION #####
+// ###############################################
 void World::setup(){
   set_rng_seed(RNG_SEED);
   // This function initializes the global variables and setus up the world
@@ -35,51 +63,54 @@ void World::setup(){
   setup_patches(); // Initializing the patches
   
   global_ID_counter = 0;
+  // ##################################################
+  // #######END USER SHOULD EDIT IN THIS SECTION#######
+  // ### ADD CODE TO SETUP THE WORLD AND ADD TURTLES###
+  // ##################################################
 
-  // create cell types like so, using PMN as an example
-  /*
-  for (int i = 0; i < NUM_CELLS_TO_ADD; i++) {
-    // get random position to add new cell
-    int random_x = RNG_Engine() % WORLD_WIDTH; //random X and Y position
-    int random_y = RNG_Engine() % WORLD_HEIGHT;
-    
-    // function that creates the actual PMN turtle, adding it to the patch, and tracking vectors, and returns the pmn
-    auto pmn = create_pmn_turtle(random_x, random_y, global_ID_counter++)
-      
-    // setting new cell variables
-    pmn->setAge(rand() % 50); // setting age to random number no larger than 50
-    pmn->setWbcRoll(1);
-    pmn->setWbcStick(0);
-    pmn->setWbcMigrate(0);
-    pmn->setPmnPcd(10);
-  
-  }
-  // repeat the above code block for all turtle types in setup
-  */  
-  
   // set world global variables at the end
   // eg, system_oxy = 10201.0;
 }
 
+
+// ###############################################
+// ####### END USER SHOULD EDIT GO FUNCTION ######
+// ###############################################
 void World::go() {
     // NetLogo "tick" equivalent in C++ is simply incrementing the time counter
     step++;
 
-    // implement netlogo Go function here
+  // ##################################################
+  // #######END USER SHOULD EDIT IN THIS SECTION#######
+  // ###CALL EACH TURTLE TYPE AND HAVE IT DO FUNCTION##
+  // ##################################################
+    // // for each turtle in all_examples
+    // for (auto& example_turtle : all_examples){
+    //   // do custom defined user function
+    //   example_turtle_function(example_turtle);
+    // }
 
-
+    // Then diffuse
+    diffuse();
+    evaporate();
     // end of go
     updateTurtleVectors(); // need to update turtle positions/delete dead turtles
 }
 
-// function to diffuse cytokien from center patch to neighboring patch for whole grid
+// ##################################################
+// ######END USER SHOULD EDIT DIFFUSE FUNCTION#######
+// ##################################################
+// function to diffuse cytokine from center patch to neighboring patch for whole grid
+// this function can become very long with many vars,
+// but it is mostly boiler plate
 void World::diffuse(){
   // need to diffuse values from patches out to neighboring patches
   float factor_for_neighbors = 1/8; //eight neighbors in a 2D grid
-
-  // follow this example format for each diffusing variable on the patches. Using endotoxin as an example
+// ###############################################
+  // #FOLLOW THIS EXAMPLE CODE TO DIFFUSE VARIABLES#
+  // ############ ENDOTOXIN AS EXAMPLE #############
+  // ###############################################
   /*
-  // start with Endotoxin
   // for all patches
   for (auto& patch : all_patches){patch->setTempVar(0);}  // reset temp_var on patch
   for (auto& center_patch : all_patches){
@@ -112,16 +143,24 @@ void World::diffuse(){
   }
   */
   
-  //implement diffusion for other variables below
-  
+  // ###############################################
+  // ######## END USER IMPLEMENTS DIFFUSION ########
+  // ############# FOR OTHER VARS BELOW ############
+  // ###############################################
   
 }
 
+// ##################################################
+// #####END USER SHOULD EDIT EVAPORATE FUNCTION######
+// ##################################################
 void World::evaporate(){
   // evaporate variables off of all patches
   for (auto& patch : all_patches) {
-    // Endotoxin as an example, amount to set is current amount times the evaporation factor
+  // ###############################################
+  // ##FOLLOW THIS EXAMPLE CODE TO EVAPORATE VARS###
+  // ############ ENDOTOXIN AS EXAMPLE #############
+  // ###############################################
+    // set amount to current amount times the evaporation factor
     // patch->setEndotoxin(patch->getEndotoxin() * ENDOTOXIN_EVAPORATION_FACTOR);
-
   }
 }

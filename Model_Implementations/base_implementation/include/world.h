@@ -41,10 +41,27 @@ private:
 public:
   std::vector<std::weak_ptr<Turtle>> all_turtles; // Vector storing all turtles in the world as weak pointers.
 
-  // include vectors of shared_ptr's of other turtle sub-types here
-  // for example:   std::vector<std::shared_ptr<Pmn>> all_pmns;
+// ##############################################
+// #####END USER SHOULD EDIT IN THIS SECTION#####
+// ##############################################
 
+// ##### DECLARE TRACKING VECTORS #####
+  // include vectors of shared_ptr's of other turtle sub-types here
   
+  // ### DECLARE TURTLE CREATION FUNCTIONS ###
+  // Declare Turtle Creation functions
+
+  // ### DECLARE SPECIFIC TURTLE FUNCTIONS ###
+  // Declare function for specific turtle type
+
+
+  // ##### DECLARE GLOBAL VARIABLES HERE #####
+
+
+
+// ##############################################
+// ##BELOW THIS SECTION SHOULD REMAIN UNTOUCHED##
+// ##############################################
   World(){}; // Default constructor.
   
   // Retrieves the patch at the specified coordinates.
@@ -71,6 +88,10 @@ public:
   // Causes a turtle to wiggle in place.
   void turtle_wiggle(std::shared_ptr<Turtle> turtle);
   
+  // removes a turtle from one tracking vector and adds it to a new one
+  // be careful, if you pass the wrong vector to remove from, you will have one turtle doing double duty as two different cells
+  void change_breed(std::vector<std::shared_ptr<Turtle>>& source, std::vector<std::shared_ptr<Turtle>>& destination, const std::shared_ptr<Turtle>& obj);
+
   // Removes a turtle from the world.
   void kill_turtle(std::shared_ptr<Turtle> turtle);
 
