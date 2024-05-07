@@ -111,11 +111,14 @@ public:
   void move_turtle_random_jump(std::shared_ptr<Turtle> turtle);
   // Causes a turtle to wiggle in place then move forward.
   void turtle_wiggle(std::shared_ptr<Turtle> turtle);
-  
+
+  // removes a turtle from one tracking vector and adds it to a new one
+  // be careful, if you pass the wrong vector to remove from, you will have one turtle doing double duty as two different cells
+  void change_breed(std::vector<std::shared_ptr<Turtle>>& source, std::vector<std::shared_ptr<Turtle>>& destination, const std::shared_ptr<Turtle>& obj);
+
   // Removes a turtle from the world.
   void kill_turtle(std::shared_ptr<Turtle> turtle);
 
-  
   // templated function to kill any turtle or agent
   template <typename T>
   void kill(std::shared_ptr<T> &ptr){
@@ -157,7 +160,31 @@ public:
   void mono_sniff(std::shared_ptr<Turtle> mono);
 
   void mono_function(std::shared_ptr<Turtle> mono);
-};
+
+  void TH0_function(std::shared_ptr<Turtle> turtle);
+
+  void TH1_function(std::shared_ptr<Turtle> turtle);
+
+  void TH2_function(std::shared_ptr<Turtle> turtle);
+
+  void pmn_marrow_function(std::shared_ptr<Turtle> pmn_marrow);
+
+  void mono_marrow_function(std::shared_ptr<Turtle> mono_marrow);
+
+  void TH0_germ_function(std::shared_ptr<Turtle> TH0_germ);
+  
+  void TH1_germ_function(std::shared_ptr<Turtle> TH1_germ);
+
+  void TH2_germ_function(std::shared_ptr<Turtle> TH2_germ);
+
+  void update_system_oxy();
+
+  void set_injury_infection(int inj_number, double radius);
+
+  void injure_sterile(int inj_number);
+  
+  };
+
 
 
 #endif

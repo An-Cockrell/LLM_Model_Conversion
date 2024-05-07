@@ -124,6 +124,14 @@ void World::turtle_wiggle(std::shared_ptr<Turtle> turtle){
   move_turtle(turtle);
 }
 
+void World::change_breed(std::vector<std::shared_ptr<Turtle>>& source, std::vector<std::shared_ptr<Turtle>>& destination, const std::shared_ptr<Turtle>& obj) {
+    auto it = std::find(source.begin(), source.end(), obj);
+    if (it != source.end()) {
+        destination.push_back(std::move(*it));
+        source.erase(it);
+    }
+}
+
 // removes turtle from its patch
 void World::kill_turtle(std::shared_ptr<Turtle> turtle){
   Patch &turtle_current_patch = get_patch(turtle->getX(), turtle->getY());

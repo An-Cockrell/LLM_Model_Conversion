@@ -302,39 +302,29 @@ void World::updateTurtleVectors(){
 }
 
 
-void World::setup(){
-  set_rng_seed(RNG_SEED);
-  // This function initializes the global variables and setus up the world
-  step = 0;
-  time = 1;
-  
-  setup_patches(); // Initializing the patches
-  
-  global_ID_counter = 0;
+void World::setup() {
+    set_rng_seed(RNG_SEED);
 
-  // create cell types like so, using PMN as an example
-  /*
-  for (int i = 0; i < NUM_CELLS_TO_ADD; i++) {
-    // get random position to add new cell
-    int random_x = RNG_Engine() % WORLD_WIDTH; //random X and Y position
-    int random_y = RNG_Engine() % WORLD_HEIGHT;
-    
-    // function that creates the actual PMN turtle, adding it to the patch, and tracking vectors, and returns the pmn
-    auto pmn = create_pmn_turtle(random_x, random_y, global_ID_counter++)
-      
-    // setting new cell variables
-    pmn->setAge(rand() % 50); // setting age to random number no larger than 50
-    pmn->setWbcRoll(1);
-    pmn->setWbcStick(0);
-    pmn->setWbcMigrate(0);
-    pmn->setPmnPcd(10);
-  
-  }
-  // repeat the above code block for all turtle types in setup
-  */  
-  
-  // set world global variables at the end
-  // eg, system_oxy = 10201.0;
+    step = 0;
+    time = 1;
+    system_oxy = 0;
+    oxy_deficit = 0;
+    total_infection = 0;
+    total_TNF = 0;
+    total_sTNFr = 0;
+    total_IL_10 = 0;
+    total_GCSF = 0;
+    total_pro_TH1 = 0;
+    total_pro_TH2 = 0;
+
+    setup_patches(); // Initializing the patches
+
+    global_ID_counter = 0;
+
+    // Adding various turtles and adding them to the different tracking vectors
+
+    system_oxy = 10201.0;
+    oxy_deficit = 0;
 }
 
 void World::go() {
@@ -348,338 +338,84 @@ void World::go() {
     updateTurtleVectors(); // need to update turtle positions/delete dead turtles
 }
 
+void World::update_system_oxy() {
+    system_oxy = 0;
+    oxy_deficit = 10201.0;
+    total_infection = 0;
+    total_TNF = 0;
+    total_sTNFr = 0;
+    total_IL_10 = 0;
+    total_pro_TH1 = 0;
+    total_pro_TH2 = 0;
+    total_GCSF = 0;
 
+    // Calculate system oxy
+    for (int x = 0; x < WORLD_WIDTH; ++x) {
+        for (int y = 0; y < WORLD_HEIGHT; ++y) {
+            system_oxy += all_patches[x][y].getOxy();
+        }
+    }
+    system_oxy /= 100;
+    oxy_deficit = 10201.0 - system_oxy;
 
-void World::inj_function(Patch& patch) {
- float rand_inj = 0;
- float oxy = std::max(0.0f, patch.getOxy() - patch.getInfection());
- patch.setOxy(oxy);
- patch.setEndotoxin(patch.getEndotoxin() + (float)patch.getInfection() / 10);
+    // Calculate total infections and cytokines
+    for (int x = 0; x < WORLD_WIDTH; ++x) {
+        for (int y = 0; y < WORLD_HEIGHT; ++y) {
+            total_infection += all_patches[x][y].getInfection();
+            total_TNF += all_patches[x][y].getTNF();
+            total_sTNFr += all_patches[x][y].getSTNFr();
+            total_IL_10 += all_patches[x][y].getIL_10();
+            total_GCSF += all_patches[x][y].getGCSF();
+        }
+    }
+    total_infection /= 100;
+    total_TNF /= 100;
+    total_sTNFr /= 100;
+    total_IL_10 /= 100;
+    total_GCSF /= 100;
 
- if (patch.getInfection() >= 100) {
-   int random_heading = RNG_Engine() % 360;
-   float displacement = 1;
-   float target_x = patch.getX() + std::round(displacement * std::cos(random_heading * M_PI / 180.0));
-   float target_y = patch.getY() + std::round(displacement * std::sin(random_heading * M_PI / 180.0));
-   auto target_patch= get_patch(target_x, target_y);
-
-   target_patch.setInfection(target_patch.getInfection() + 1);
-
-   patch.setInfection(100);
- }
-
- if (patch.getInfection() > 0) {
-   patch.setInfection(std::max(0.0f, patch.getInfection() - patch.getCytotox() + 0.1f));
- }
-
- if (patch.getInfection() > 50) {
-   patch.setColor("grey");
- }
+    // Calculate total pro-TH1 and pro-TH2
+    for (const auto& turtle : all_turtles) {
+        if (turtle.lock()) { // Check if turtle is still alive
+            total_pro_TH1 += turtle.lock()->getProTH1();
+            total_pro_TH1 += turtle.lock()->getProTH1();
+            total_pro_TH2 += turtle.lock()->getProTH2();
+        }
+    }
+    total_pro_TH1 /= 100;
+    total_pro_TH2 /= 100;
 }
 
+void World::set_injury_infection(int inj_number, double radius) {
+   std::default_random_engine generator;
+   std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
-void World::ec_activate(Patch& patch) {
-    patch.setEcRoll(patch.getEcRoll() + 1);
-    patch.setEcStick(patch.getEcStick() + 1);
-    patch.setPAF(patch.getPAF() + 1);
-    patch.setIL_8(patch.getIL_8() + 1);
-}
+   for (int i = 0; i < inj_number; ++i) {
+       double random_angle = 2 * M_PI * distribution(generator);
+       double random_distance = std::pow(distribution(generator), 1.0 / 2) * radius;
 
-void World::patch_inj_spread(Patch& patch) {
-   if (&patch == nullptr) {
-       return;
-   }
+       int random_x = (WORLD_WIDTH - 1) / 2 + std::round(random_distance * std::cos(random_angle));
+       int random_y = (WORLD_HEIGHT - 1) / 2 + std::round(random_distance * std::sin(random_angle));
 
-   float oxy = patch.getOxy();
-   float cytotox = patch.getCytotox();
-   float eRoll = patch.getEcRoll();
-   float eStick = patch.getEcStick();
-   float paf = patch.getPAF();
-
-   oxy -= cytotox;
-
-   if (oxy >= 30 && oxy < 60) { // Ischemia
-       eRoll += 1;
-       oxy -= 0.05;
-       paf += 1;
-
-       for (int dx = -1; dx <= 1; ++dx) {
-           for (int dy = -1; dy <= 1; ++dy) {
-               if (!(dx == 0 && dy == 0)) {
-                   Patch& neighbor = get_patch(patch.getX() + dx, patch.getY() + dy);
-                   if (neighbor.getOxy() >= 0) {
-                       neighbor.setOxy(neighbor.getOxy() - 0.05);
-                   }
-               }
-           }
-       }
-   } else if (oxy <= 30) { // Infarction
-       eStick += 1;
-       oxy -= 0.25;
-       paf += 1;
-
-       for (int dx = -1; dx <= 1; ++dx) {
-           for (int dy = -1; dy <= 1; ++dy) {
-               if (!(dx == 0 && dy == 0)) {
-                   Patch& neighbor = get_patch(patch.getX() + dx, patch.getY() + dy);
-                   if (neighbor.getOxy() >= 0) {
-                       neighbor.setOxy(neighbor.getOxy() - 0.25);
-                   }
-               }
-           }
-       }
-   }
-
-   if (oxy < 0) { // Prevents negative values for oxy
-       patch.setOxy(0);
-   } else {
-       patch.setOxy(oxy);
-   }
-
-   patch.setEcRoll(eRoll);
-   patch.setEcStick(eStick);
-   patch.setPAF(paf);
-}
-
-
-void World::ec_function(Patch& patch) {
-   if (patch.getEndotoxin() >= 1.0f || patch.getOxy() < 60.0f) {
-       patch.setEcActivation(1.0f);
-   }
-
-   if (patch.getEcActivation() == 1.0f) {
-       ec_activate(patch);
-       patch_inj_spread(patch);
-   }
-}
-
-void World::pmn_burst(std::shared_ptr<Turtle> pmn) {
-   if (!pmn) {
-       return;
-   }
-
-   Patch& patch = get_patch(pmn->getX(), pmn->getY());
-
-   float tnf = patch.getTNF();
-   float cytotox = patch.getCytotox();
-   cytotox += std::max(10.0f, tnf);
-   patch.setCytotox(cytotox);
-
-   float oxy = patch.getOxy();
-   oxy = 100.0f;
-   patch.setOxy(oxy);
-
-   float eRoll = patch.getEcRoll();
-   eRoll = 0.0f;
-   patch.setEcRoll(eRoll);
-
-   float eStick = patch.getEcStick();
-   eStick = 0.0f;
-   patch.setEcStick(eStick);
-
-   float eMigrate = patch.getEcMigrate();
-   eMigrate = 0.0f;
-   patch.setEcMigrate(eMigrate);
-
-   float infG = patch.getINF_g();
-   float gcsf = patch.getGCSF();
-   tnf += 1.0f;
-   float il1 = patch.getIL_1();
-   il1 += 1.0f;
-
-   patch.setTNF(tnf);
-   patch.setIL_1(il1);
-
-   float pmn_age = pmn->getPmnAge();
-   float pmn_pcd = pmn->getPmnPcd();
-   pmn_age = pmn_pcd;
-   pmn_pcd += -1.0f + std::max(0.0f, (tnf + infG + gcsf - patch.getIL_10()) / 100.0f);
-   pmn->setPmnAge(pmn_age);
-   pmn->setPmnPcd(pmn_pcd);
-
-   if (pmn_age < 0) {
-       kill(pmn);
-   }
-}
-
-
-void World::pmn_sniff(std::shared_ptr<Turtle> pmn) {
-   if (!pmn) {
-       return;
-   }
-
-   const Patch& patchAhead = getPatchAhead(pmn);
-   const Patch& patchRightAhead = getPatchAheadRight(pmn);
-   const Patch& patchLeftAhead = getPatchAheadLeft(pmn);
-
-   double pmnahead = patchAhead.getIL_8();
-   double pmnright = patchRightAhead.getIL_8();
-   double pmnleft = patchLeftAhead.getIL_8();
-
-   double heading = pmn->getHeading() * (M_PI / 180.0);
-
-   if (pmnright > pmnahead && pmnright > pmnleft) {
-       heading -= 45;
-   } else if (pmnleft > pmnahead) {
-       heading += 45;
-   }
-
-   pmn->setHeading(heading * 180 / M_PI);
-
-   move(pmn);
-}
-
-void World::pmn_function(std::shared_ptr<Turtle> pmn) {
-   if (!pmn) {
-       return;
-   }
-
-   Patch& patch = get_patch(pmn->getX(), pmn->getY());
-
-   if (pmn->getWbcMigrate() > 0) {
-       pmn_burst(pmn);
-   }
-   else {
-       if ((patch.getEcRoll() > 3.0f) && (pmn->getWbcRoll() == 1.0f)) {
-           pmn_sniff(pmn);
-       }
-       else {
-           for (int i = 0; i < 2; i++) {
-               pmn_sniff(pmn);
-           }
-       }
-
-       if (patch.getTNF() + patch.getPAF() > 1.0f) {
-           pmn->setWbcStick(patch.getIL_1());
-           patch.setIL_1ra(patch.getIL_1ra() + 1.0f);
-       }
-
-       if ((pmn->getWbcStick() >= 1.0f) && (patch.getEcStick() >= 100.0f)) {
-           float wbcMigrate = patch.getTNF() + patch.getIL_1() + patch.getGCSF() - patch.getIL_10();
-           pmn->setWbcMigrate(wbcMigrate);
-           pmn->setColor("yellow");
-       }
-
-       pmn->setPmnAge(pmn->getPmnAge() - 1.0f);
-       if (pmn->getPmnAge() < 0) {
-           kill(pmn);
+       if (random_x >= 0 && random_x < WORLD_WIDTH && random_y >= 0 && random_y < WORLD_HEIGHT) {
+           all_patches[random_x][random_y].setInfection(100);
        }
    }
 }
 
-void World::heal(Patch& patch) {
-   patch.setOxy(100.0);
-   patch.setEcRoll(0.0);
-   patch.setEcStick(0.0);
-   patch.setEcMigrate(0.0);
-   patch.setInfection(0.0);
-}
+void World::injure_sterile(int inj_number) {
+   std::default_random_engine generator;
+   std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
-void World::mono_sniff(std::shared_ptr<Turtle> mono) {
-   if (!mono) {
-       return;
-   }
+   for (int i = 0; i < inj_number; ++i) {
+       double random_radius = std::sqrt(std::abs(i));
+       int random_x = (WORLD_WIDTH - 1) / 2 + std::round(distribution(generator) * random_radius);
+       int random_y = (WORLD_HEIGHT - 1) / 2 + std::round(distribution(generator) * random_radius);
 
-   float monoahead = 0, monoright = 0, monoleft = 0;
-
-   const Patch& patchAhead = getPatchAhead(mono, 1);
-   monoahead = patchAhead.getPAF();
-
-   const Patch& patchRightAhead = getPatchAheadRight(mono, 1);
-   monoright = patchRightAhead.getPAF();
-
-   const Patch& patchLeftAhead = getPatchAheadLeft(mono, 1);
-   monoleft = patchLeftAhead.getPAF();
-
-   if (monoright >= monoahead && monoright >= monoleft) {
-       mono->setHeading(mono->getHeading() + 45);
-   }
-   else if (monoleft >= monoahead) {
-       mono->setHeading(mono->getHeading() - 45);
-   }
-
-   move(mono); // Assuming you have implemented the move member function for World
-}
-
-void World::mono_function(std::shared_ptr<Turtle> mono) {
-   if (!mono) {
-       return;
-   }
-
-   Patch& patch = get_patch(mono->getX(), mono->getY());
-
-   if (patch.getSTNFr() <= 100.0f) {
-       patch.setTNF(std::min(100.0f, patch.getTNF() + patch.getSTNFr()));
-   }
-   else {
-       patch.setTNF(std::min(100.0f, patch.getTNF() - patch.getSTNFr()));
-   }
-
-   mono->setIL_1r(std::min(100.0f, patch.getIL_1() - patch.getIL_1ra() - patch.getSIL_1r()));
-   patch.setIL_1ra(patch.getIL_1ra() + patch.getIL_1() / 2);
-   patch.setSTNFr(patch.getSTNFr() + patch.getTNF() / 2);
-   patch.setSIL_1r(patch.getSIL_1r() + mono->getIL_1r() / 2);
-
-   float endotoxin = patch.getEndotoxin();
-   float PAF = patch.getPAF();
-   float INF_g = patch.getINF_g();
-   float IL_10 = patch.getIL_10();
-   float activation = endotoxin + PAF + INF_g - IL_10;
-
-   if (activation > 0) {
-       float GCSF = patch.getGCSF();
-       float TNF = patch.getTNF();
-       float IL_1 = patch.getIL_1();
-       float IL_8 = patch.getIL_8();
-       float IL_12 = patch.getIL_12();
-
-       GCSF += endotoxin + PAF + TNF + INF_g;
-       IL_8 += TNF + IL_1;
-       IL_12 += TNF + IL_1;
-       IL_10 += TNF + IL_1;
-       IL_1 += endotoxin + PAF + mono->getIL_1r() + TNF;
-       TNF += endotoxin + PAF + mono->getTNFr() + INF_g;
-
-       if (mono->getWbcStick() == 1 && patch.getEcStick() >= 100.0f) {
-           mono->setWbcMigrate(1.0f);
-       }
-
-       if (mono->getWbcRoll() == 1) {
-           mono->setWbcStick(1.0f);
-       }
-
-       mono->setWbcRoll(1.0f);
-   }
-   else if (activation < 0) {
-       patch.setIL_10(patch.getIL_10() + patch.getTNF() + patch.getIL_1());
-   }
-
-   if (mono->getWbcMigrate() == 1.0f) {
-       heal(patch);
-   }
-
-   int condition = (mono->getWbcRoll() == 1) ? 1 : 2;
-   if (condition == 1) {
-       mono_sniff(mono);
-       move(mono);
-   }
-   else {
-       for (int i = 0; i < 2; i++) {
-           mono_sniff(mono);
-           move(mono);
+       if (random_x >= 0 && random_x < WORLD_WIDTH && random_y >= 0 && random_y < WORLD_HEIGHT) {
+           all_patches[random_x][random_y].setOxy(0);
+           all_patches[random_x][random_y].setEcRoll(3);
+           all_patches[random_x][random_y].setEcStick(100);
        }
    }
-
-
-   if (activation > 20) {
-       activation = 20.0f;
-       mono->setActivation(activation);
-   }
-
-   mono->setMonoAge(mono->getMonoAge() - 1.0f);
-   if (mono->getMonoAge() < 0) {
-       kill(mono);
-   }
-
 }
-
