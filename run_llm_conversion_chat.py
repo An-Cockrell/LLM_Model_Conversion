@@ -20,7 +20,7 @@ os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 import re
 
 if __name__=="__main__":
-    save_file_name = "Test3/"
+    save_file_name = "Test3"
     from pathlib import Path
     Path("Model_Implementations/" + save_file_name).mkdir(parents=True, exist_ok=True)
 
@@ -48,7 +48,7 @@ if __name__=="__main__":
 
     developer_guide_text = open('./General_NetLogo_Framework/General_Netlogo_C++/Developer_guide.md').read()
 
-    header_filepath_prefix = "Model_Implementations/" + save_file_name + "include/"
+    header_filepath_prefix = "Model_Implementations/" + save_file_name + "/include/"
     header_files = ["parameters.h", "agent.h", "patch.h", "turtle.h", "world.h"]
     simulation_framework_txt = ""
     for header in header_files:
@@ -88,14 +88,17 @@ if __name__=="__main__":
         {"role":"system", "content":system_prompt},
     ]   
 
-    previous_chat = "./LLM_output_files/" + save_file_name
+    previous_chat = "./LLM_output_files/" + save_file_name + ".json"
     # previous_chat = None
     if previous_chat is not None:
-        with open(previous_chat, "r") as f:
-            model_outputs = json.load(f)
-        for key in model_outputs.keys():
-            chat.append({"role":"user", "content": key})
-            chat.append({"role":"assisstant", "content": model_outputs[key]})
+        try:
+            with open(previous_chat, "r") as f:
+                model_outputs = json.load(f)
+            for key in model_outputs.keys():
+                chat.append({"role":"user", "content": key})
+                chat.append({"role":"assisstant", "content": model_outputs[key]})
+        except FileNotFoundError:
+            model_outputs= {}
     else:
         model_outputs = {}
 
@@ -121,7 +124,7 @@ if __name__=="__main__":
                     continue    # skipping ones we have already added
                 with open(header_filepath_prefix + header, "r") as f:
                     updated_simulation_framework_txt += f.read() + "\n\n\n"    
-            with open("Model_Implementations/" + save_file_name + "src/world_custom_implementations.cpp", "r") as f:
+            with open("Model_Implementations/" + save_file_name + "/src/world_custom_implementations.cpp", "r") as f:
                 updated_simulation_framework_txt += f.read() + "\n\n\n"
             system_prompt = generate_system_prompt(sim_framework=updated_simulation_framework_txt)
 
