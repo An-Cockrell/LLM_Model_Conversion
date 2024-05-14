@@ -1,5 +1,11 @@
 # LLM_Model_Conversion
 ## Installation notes
+
+In order to run the LLM model interaction, you must install the python conda environment and activate it. Create the env with all its dependencies by running .`conda env create -f LLM_Environment.yml` at the command line.
+
+Activate it by running `conda activate LLM`
+
+
 In order to render the simulation graphically so that you can see what is happening, this uses SDL2.
 The simulation can be paused by focusing on the simulation graphics window and pressing spacebar.
 To change the render size, change the `GRID_SIZE` parameter in `rendering.h` to be smaller for a smaller rendering, or larger for a bigger one.
@@ -17,9 +23,6 @@ make
 sudo make install
 ```
 
-In order to run the LLM model interaction, you must install the conda environment and activate it. Create the env with all its dependencies by running .`conda env create -f LLM_Environment.yml`
-
-Activate it by running `conda activate LLM`
 
 ## Running the LLM
 On a machine with apropriate resources, you should be able to interact with the LLM for chatting by simply running `python3 run_llm_chat`, or you can attempt to use a version more finely tuned for converting and incorporating netlogo code into the C++ framework.
