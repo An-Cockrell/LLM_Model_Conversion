@@ -5,6 +5,7 @@
 std::shared_ptr<Turtle> World::create_test_turtle(int x, int y, int id, int heading) {
    auto example = std::make_shared<Turtle>(x, y, id, heading);
    example->setLabel("example");
+   example->setAge(100);
    Patch& patch = get_patch(x, y);
    std::weak_ptr<Turtle> example_weak_ptr = example;
 
@@ -16,9 +17,14 @@ std::shared_ptr<Turtle> World::create_test_turtle(int x, int y, int id, int head
 }
 
 // THIS IS A CUSTOM IMPLEMETATION FUNCTION AS AN EXAMPLE TO CREATE TURTLE SPECIFIC FUNCTIONS
-void World::example_turtle_function(std::shared_ptr<Turtle> example_turtle){
+void World::example_turtle_function(std::shared_ptr<Turtle> &example_turtle){
   // turtle is just going to wiggle (change heading randomly 45 degrees either direction, then move forward)
   turtle_wiggle(example_turtle);
+  example_turtle->setAge(example_turtle->getAge() - 1);
+  if (example_turtle->getAge() < 0){
+    kill(example_turtle);
+  }
+
 }
 
 

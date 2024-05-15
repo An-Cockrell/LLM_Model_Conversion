@@ -57,12 +57,12 @@ The `World` class functions as the orchestration layer for the simulation, centr
 Agent-specific actions, such as movement or executing particular behaviors, are managed by methods within the `World` class. These methods are designed to take a pointer to an agent—specifically, a `Turtle`—as an argument. The `World` class uses details from the `Turtle` to execute appropriate actions. This centralized handling ensures that all agent interactions are consistent with the simulation's rules and logic.
 
 **Key Implementation Note:**
-All functions where a `Turtle` interacts with the environment or other agents must be implemented as methods on the `World` class that accept pointers (or smart pointers) to the `Turtle`. These methods are responsible for manipulating the simulation state, thus ensuring that agents interact with the environment and each other according to the defined simulation rules.
+All functions where a `Turtle` interacts with the environment or other agents must be implemented as methods on the `World` class that accept references to pointers (or smart pointers) to the `Turtle`. These methods are responsible for manipulating the simulation state, thus ensuring that agents interact with the environment and each other according to the defined simulation rules.
 
 Example of a movement function in the `World` class:
 ```cpp
 // Moves a turtle within the world, considering capacity of target patches.
-void World::move_turtle(std::shared_ptr<Turtle> turtle){
+void World::move_turtle(std::shared_ptr<Turtle> &turtle){
   // moves the turtle by asking the turtle to calculate its movement, and if there is space on the target_patch, the world executes the move
   Patch &turtle_current_patch = get_patch(turtle->getX(), turtle->getY());
   auto new_coords = turtle->move(); //moving along turtle.heading for the default value of 1 unit

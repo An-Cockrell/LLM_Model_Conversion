@@ -45,7 +45,8 @@ It is important that the LLM has some of the .cpp implementations to base its co
 chat history is only about 5 responses long, so it definitely drifts, and sometimes needs to be corrected. Sometimes it drifts way too far to be useful, and its easier to delete the chat history and start over. The chat history is stored at `/LLM_output_files/{save_file_name}`
 
 ## Style
-One of the biggest parts of this is that everything is managed by the world class. Turtles are passed as arguments to functions to have the turtle execute the function inside the world. When you prompt the model and you want a particular turtle to perform an action, when you write the action function tell the model that the function should take a `shared_ptr` to a turtle.
+One of the biggest parts of this is that everything is managed by the world class. Turtles are passed as arguments to World functions to have the world make the turtle execute the function inside the world. When you prompt the model and you want a particular turtle to perform an action, tell the model that the function should take a `reference to a shared_ptr` to a turtle. That will produce an output that looks like World::example_function(std::shared_ptr\<Turtle\> &example_turtle){......}
+
 Additionally, when defining new breeds, you must create a helper function to create a new turtle and add it to a tracking vector for the apropriate type. Examples of this are shown in `Model_Implementations/hand_written_example/` and in the [developer guide](https://github.com/An-Cockrell/LLM_Model_Conversion/blob/main/General_NetLogo_Framework/General_Netlogo_C%2B%2B/Developer_guide.md)
 
 Also, read the model responses! Its often incorrect or assumes something, and needs to be corrected. Telling it what is wrong usually leads to a good response, and it works the second time, but not always.

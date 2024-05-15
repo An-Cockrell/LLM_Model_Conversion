@@ -77,7 +77,7 @@ class Turtle : public Agent{
     void display();
 
     // Getter for the turtle's ID.
-    int getID() const;
+    int getID() const{return ID_num;};
     
     // Sets the turtle's heading.
     void setHeading(int newHeading){heading = newHeading;};
@@ -92,8 +92,8 @@ class Turtle : public Agent{
     int getAge() const{return age;};
     
     // Getters for the turtle's precise (decimal) x and y coordinates.
-    float get_x_dec() const;
-    float get_y_dec() const;
+    float get_x_dec() const {return x_dec;};
+    float get_y_dec() const {return y_dec;};
 
 
 

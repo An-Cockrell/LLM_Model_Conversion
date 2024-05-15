@@ -55,7 +55,7 @@ public:
 
   // ### DECLARE SPECIFIC TURTLE FUNCTIONS ###
   // Declare function for specific turtle type
-  void example_turtle_function(std::shared_ptr<Turtle> example_turtle);
+  void example_turtle_function(std::shared_ptr<Turtle> &example_turtle);
 
 
   // ##### DECLARE GLOBAL VARIABLES HERE #####
